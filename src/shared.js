@@ -2,6 +2,7 @@
 
 const YTDLP_VIDEO_ID = 'cove.community.downloaders.ytdlp/video';
 const YTDLP_AUDIO_ID = 'cove.community.downloaders.ytdlp/audio';
+const TEXT_DOWNLOADER_ID = 'cove.community.downloaders.common-text/literotica';
 const APP_WINDOW_ID_KEY = 'coveHelperAppWindowId';
 const PENDING_KEY = 'coveHelperPending';
 
@@ -115,7 +116,7 @@ async function matchDownloaders(settings, url) {
     method: 'POST',
     body: JSON.stringify({ url }),
   });
-  return Array.isArray(body) ? body : [];
+  return (Array.isArray(body) ? body : []).map(normalizeMatch);
 }
 
 async function startDownload(settings, payload) {
@@ -153,20 +154,89 @@ function isYtDlpId(downloaderId) {
   return String(downloaderId || '').startsWith('cove.community.downloaders.ytdlp/');
 }
 
+function isTextSiteUrl(url) {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./i, '').toLowerCase();
+    return host === 'literotica.com' || host.endsWith('.literotica.com');
+  } catch (_) {
+    return false;
+  }
+}
+
+function isAudioSiteUrl(url) {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./i, '').toLowerCase();
+    return (
+      host === 'soundgasm.net' ||
+      host.endsWith('.soundgasm.net') ||
+      host === 'whyp.it' ||
+      host.endsWith('.whyp.it')
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
+/** Prefer downloaderId suffix over API entity — avoids yt-dlp/video being treated as Text. */
+function resolveMatchEntity(match) {
+  const id = String((match && match.downloaderId) || '');
+  if (/\/video$/i.test(id) || /\/divert$/i.test(id)) return 'Video';
+  if (/\/audio$/i.test(id)) return 'Audio';
+  if (/\/image$/i.test(id)) return 'Image';
+  if (/common-text/i.test(id) || /literotica/i.test(id)) return 'Text';
+
+  const raw =
+    (match && (match.supportedEntity || match.SupportedEntity || match.entity)) || '';
+  if (raw) {
+    const normalized = String(raw);
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
+  }
+  return 'Video';
+}
+
+function normalizeMatch(raw) {
+  if (!raw || typeof raw !== 'object') return raw;
+  const normalizedUrl = raw.normalizedUrl || raw.NormalizedUrl || raw.url || '';
+  return {
+    downloaderId: raw.downloaderId || raw.DownloaderId || '',
+    downloaderName: raw.downloaderName || raw.DownloaderName || '',
+    supportedEntity: resolveMatchEntity(raw),
+    normalizedUrl,
+    label: raw.label || raw.Label || '',
+    qualityOptions: raw.qualityOptions || raw.QualityOptions || [],
+    sourceUrl: raw.sourceUrl || raw.SourceUrl || null,
+    isFallback: !!raw.isFallback,
+  };
+}
+
 function entityScore(entity, preferredMode) {
-  const value = String(entity || '');
-  if (value.toLowerCase() === String(preferredMode || '').toLowerCase()) return 3;
-  if (value === 'Image' && preferredMode !== 'Text') return 1;
+  const value = String(entity || '').toLowerCase();
+  const mode = String(preferredMode || 'Video').toLowerCase();
+  if (value === mode) return 3;
+  if (value === 'image' && mode === 'video') return 1;
   return 0;
 }
 
 function matchRank(match, preferredMode) {
-  let score = entityScore(match.supportedEntity, preferredMode) * 10;
-  if (!isYtDlpId(match.downloaderId)) score += 5;
-  if (isYtDlpId(match.downloaderId)) {
-    if (preferredMode === 'Audio' && /\/audio$/i.test(match.downloaderId)) score += 2;
-    if (preferredMode !== 'Audio' && /\/video$/i.test(match.downloaderId)) score += 2;
+  const mode = preferredMode || 'Video';
+  const entity = resolveMatchEntity(match);
+  let score = entityScore(entity, mode) * 10;
+
+  // Specialized downloaders beat yt-dlp only when they match the preferred entity.
+  if (!isYtDlpId(match.downloaderId) && entityScore(entity, mode) > 0) {
+    score += 5;
   }
+
+  if (isYtDlpId(match.downloaderId)) {
+    if (mode === 'Audio' && /\/audio$/i.test(match.downloaderId)) score += 4;
+    if (mode === 'Video' && /\/video$/i.test(match.downloaderId)) score += 4;
+    if (mode !== 'Audio' && mode !== 'Text' && /\/video$/i.test(match.downloaderId)) score += 2;
+  }
+
+  // Keep Text from winning over yt-dlp on normal video/audio pages.
+  if ((mode === 'Video' || mode === 'Audio') && entity === 'Text') score -= 50;
+  if (mode === 'Text' && (entity === 'Video' || entity === 'Audio')) score -= 20;
+
   return score;
 }
 
@@ -177,22 +247,53 @@ function defaultQualityId(match) {
   return (best || options[0]).id;
 }
 
+function filterMatchesForMode(matches, settings) {
+  const mode = settings.preferredMode || 'Video';
+  const url = (matches[0] && matches[0].normalizedUrl) || '';
+
+  if (mode === 'Text' || isTextSiteUrl(url)) {
+    const text = matches.filter((m) => resolveMatchEntity(m) === 'Text');
+    if (text.length) return text;
+  }
+
+  if (mode === 'Audio' || isAudioSiteUrl(url)) {
+    const audio = matches.filter((m) => resolveMatchEntity(m) === 'Audio');
+    if (audio.length) return audio;
+  }
+
+  if (mode === 'Video' || mode === 'Audio') {
+    const aligned = matches.filter((m) => {
+      const entity = resolveMatchEntity(m);
+      if (mode === 'Audio') return entity === 'Audio';
+      return entity === 'Video' || entity === 'Image';
+    });
+    if (aligned.length) return aligned;
+
+    // Never auto-pick Text for video/audio mode.
+    const nonText = matches.filter((m) => resolveMatchEntity(m) !== 'Text');
+    if (nonText.length) return nonText;
+  }
+
+  return matches;
+}
+
 function pickMatches(matches, settings) {
-  const list = Array.isArray(matches) ? matches.slice() : [];
+  const list = (Array.isArray(matches) ? matches : []).map(normalizeMatch);
   if (!list.length) return [];
 
-  list.sort(
+  const candidates = filterMatchesForMode(list, settings);
+  candidates.sort(
     (a, b) => matchRank(b, settings.preferredMode) - matchRank(a, settings.preferredMode)
   );
 
   if (settings.queueAllMatches) {
-    return list;
+    return candidates;
   }
-  return [list[0]];
+  return [candidates[0]];
 }
 
 function ytDlpFallback(url, preferredMode) {
-  const audio = preferredMode === 'Audio';
+  const audio = preferredMode === 'Audio' || isAudioSiteUrl(url);
   return {
     downloaderId: audio ? YTDLP_AUDIO_ID : YTDLP_VIDEO_ID,
     downloaderName: audio ? 'yt-dlp Audio (fallback)' : 'yt-dlp Video (fallback)',
@@ -205,16 +306,77 @@ function ytDlpFallback(url, preferredMode) {
   };
 }
 
+/** Force Video / Audio / Text when auto-match picks the wrong type. */
+function buildForcedMatch(url, mode, existingMatches) {
+  const normalized = String(mode || '');
+  const fromMatch = (existingMatches || [])
+    .map(normalizeMatch)
+    .find((match) => resolveMatchEntity(match) === normalized);
+  if (fromMatch) {
+    return {
+      ...fromMatch,
+      downloaderName: `${fromMatch.downloaderName || fromMatch.downloaderId} (override)`,
+      label: fromMatch.label || `Forced ${normalized.toLowerCase()}`,
+    };
+  }
+
+  if (normalized === 'Audio') {
+    return {
+      downloaderId: YTDLP_AUDIO_ID,
+      downloaderName: 'yt-dlp Audio (override)',
+      supportedEntity: 'Audio',
+      normalizedUrl: url,
+      label: 'Forced audio download',
+      qualityOptions: [{ id: 'best', label: 'Best available' }],
+      sourceUrl: null,
+      isFallback: true,
+    };
+  }
+
+  if (normalized === 'Text') {
+    return {
+      downloaderId: TEXT_DOWNLOADER_ID,
+      downloaderName: 'Common Text (override)',
+      supportedEntity: 'Text',
+      normalizedUrl: url,
+      label: 'Forced text download',
+      qualityOptions: [],
+      sourceUrl: null,
+      isFallback: true,
+    };
+  }
+
+  return {
+    downloaderId: YTDLP_VIDEO_ID,
+    downloaderName: 'yt-dlp Video (override)',
+    supportedEntity: 'Video',
+    normalizedUrl: url,
+    label: 'Forced video download',
+    qualityOptions: [{ id: 'best', label: 'Best available' }],
+    sourceUrl: null,
+    isFallback: true,
+  };
+}
+
+function applyEntityOverride(url, matches, override) {
+  const list = (Array.isArray(matches) ? matches : []).map(normalizeMatch);
+  if (!override || override === 'auto') {
+    return list;
+  }
+  return [buildForcedMatch(url, override, list)];
+}
+
 function buildDownloadPayload(match, settings, qualityId) {
+  const normalized = normalizeMatch(match);
   const payload = {
-    downloaderId: match.downloaderId,
-    url: match.normalizedUrl || match.url,
-    entity: match.supportedEntity,
+    downloaderId: normalized.downloaderId,
+    url: normalized.normalizedUrl,
+    entity: resolveMatchEntity(normalized),
     autoApplyMetadata: !!settings.autoApplyMetadata,
   };
-  const q = qualityId || defaultQualityId(match);
+  const q = qualityId || defaultQualityId(normalized);
   if (q) payload.qualityId = q;
-  if (match.sourceUrl) payload.sourceUrl = match.sourceUrl;
+  if (normalized.sourceUrl) payload.sourceUrl = normalized.sourceUrl;
   return payload;
 }
 

@@ -58,6 +58,7 @@
     root = document.createElement('div');
     root.id = HOST_ID;
     shadow = root.attachShadow({ mode: 'open' });
+    const iconUrl = chrome.runtime.getURL('cove-icon-32.png');
     shadow.innerHTML = `
       <style>
         :host, * { box-sizing: border-box; font-family: "Segoe UI", system-ui, sans-serif; }
@@ -68,17 +69,14 @@
           z-index: 2147483646;
           width: 44px;
           height: 44px;
+          padding: 0;
           border-radius: 999px;
           border: none;
-          background: #3d8bfd;
-          color: #fff;
-          font-weight: 700;
-          font-size: 12px;
-          letter-spacing: 0.02em;
+          background: #171d25 url("${iconUrl}") center / 28px 28px no-repeat;
           box-shadow: 0 8px 24px rgba(0,0,0,.28);
           cursor: pointer;
         }
-        #fab:hover { filter: brightness(1.05); }
+        #fab:hover { filter: brightness(1.08); }
         #chip {
           position: fixed;
           z-index: 2147483646;
@@ -111,7 +109,7 @@
         }
         #toast[data-error="1"] { border-color: #ff6b6b; color: #ffb4b4; }
       </style>
-      <button id="fab" type="button" title="Send page to Cove">Cove</button>
+      <button id="fab" type="button" title="Send page to Cove" aria-label="Send page to Cove"></button>
       <button id="chip" type="button" title="Send link to Cove">Cove</button>
       <div id="toast" hidden></div>
     `;

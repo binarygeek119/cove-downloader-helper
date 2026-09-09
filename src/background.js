@@ -20,13 +20,28 @@ function ensureContextMenus() {
   });
 }
 
+function applyToolbarIcon() {
+  chrome.action.setIcon({
+    path: {
+      16: 'cove-icon-16.png',
+      32: 'cove-icon-32.png',
+      48: 'cove-icon-48.png',
+      128: 'cove-icon-128.png',
+    },
+  });
+}
+
 chrome.runtime.onInstalled.addListener(() => {
   ensureContextMenus();
+  applyToolbarIcon();
 });
 
 chrome.runtime.onStartup.addListener(() => {
   ensureContextMenus();
+  applyToolbarIcon();
 });
+
+applyToolbarIcon();
 
 async function setPending(url, tab) {
   await sessionSet({

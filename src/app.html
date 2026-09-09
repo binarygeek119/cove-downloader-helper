@@ -4,10 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cove Downloader Helper</title>
+    <link rel="icon" href="icon.png" type="image/png" />
     <link rel="stylesheet" href="app.css" />
   </head>
   <body>
     <header class="app-header">
+      <img class="brand-icon" src="icon.png" alt="" width="28" height="28" />
       <h1>Cove Downloader Helper</h1>
       <nav class="tabs" role="tablist">
         <button type="button" class="tab active" data-tab="download" role="tab" aria-selected="true">Download</button>
@@ -19,6 +21,15 @@
     <main>
       <section id="panel-download" class="panel active" role="tabpanel">
         <p id="download-url" class="muted url-line"></p>
+        <label class="override-label">
+          Type override
+          <select id="entityOverride">
+            <option value="auto">Auto (use match)</option>
+            <option value="Video">Video</option>
+            <option value="Audio">Audio</option>
+            <option value="Text">Text</option>
+          </select>
+        </label>
         <p id="download-status" class="status" hidden></p>
         <div id="download-loading" class="loading" hidden>Matching downloaders…</div>
         <div id="match-list" class="match-list"></div>

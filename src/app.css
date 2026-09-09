@@ -45,7 +45,16 @@ body {
   z-index: 2;
 }
 
+.app-header .brand-icon {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 8px 10px 0;
+  border-radius: 6px;
+}
+
 .app-header h1 {
+  display: inline-block;
+  vertical-align: middle;
   margin: 0 0 10px;
   font-size: 16px;
   font-weight: 650;
@@ -159,6 +168,10 @@ button:disabled {
 .url-line {
   word-break: break-all;
   margin: 0 0 10px;
+}
+
+.override-label {
+  margin-bottom: 12px;
 }
 
 .status {

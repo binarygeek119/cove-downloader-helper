@@ -3,6 +3,7 @@
   let currentTab = params.get('tab') || 'download';
   let settings = null;
   let pendingUrl = null;
+  let rawMatches = [];
   let currentMatches = [];
   let queueTimer = null;
   let startedJobIds = [];
@@ -16,6 +17,7 @@
       settings: document.getElementById('panel-settings'),
     },
     downloadUrl: document.getElementById('download-url'),
+    entityOverride: document.getElementById('entityOverride'),
     downloadStatus: document.getElementById('download-status'),
     downloadLoading: document.getElementById('download-loading'),
     matchList: document.getElementById('match-list'),
@@ -116,7 +118,12 @@
 
   function renderMatches(matches) {
     els.matchList.innerHTML = '';
-    const preferred = pickMatches(matches, settings).map((m) => m.downloaderId + '|' + m.normalizedUrl);
+    const override = els.entityOverride.value;
+    const pickSettings =
+      override && override !== 'auto'
+        ? { ...settings, preferredMode: override, queueAllMatches: false }
+        : settings;
+    const preferred = pickMatches(matches, pickSettings).map((m) => m.downloaderId + '|' + m.normalizedUrl);
     const preferredSet = new Set(preferred);
 
     matches.forEach((match, index) => {
@@ -125,7 +132,7 @@
       card.dataset.index = String(index);
 
       const key = match.downloaderId + '|' + match.normalizedUrl;
-      const checked = settings.queueAllMatches || preferredSet.has(key);
+      const checked = override !== 'auto' || settings.queueAllMatches || preferredSet.has(key);
 
       const qualities = match.qualityOptions || [];
       const defaultQ = defaultQualityId(match) || '';
@@ -136,7 +143,7 @@
             <input type="checkbox" class="match-check" ${checked ? 'checked' : ''} />
             <span class="match-title">${escapeHtml(match.downloaderName || match.downloaderId)}</span>
           </label>
-          <span class="badge">${escapeHtml(match.supportedEntity || '')}</span>
+          <span class="badge">${escapeHtml(resolveMatchEntity(match))}</span>
         </header>
         <p class="muted" style="margin:8px 0 0;word-break:break-all">${escapeHtml(match.label || match.normalizedUrl || '')}</p>
         <label style="margin-top:10px">
@@ -161,6 +168,19 @@
     });
 
     els.downloadActions.hidden = matches.length === 0;
+  }
+
+  function applyOverrideAndRender() {
+    const override = els.entityOverride.value || 'auto';
+    currentMatches = applyEntityOverride(pendingUrl, rawMatches, override);
+    renderMatches(currentMatches);
+    if (override !== 'auto') {
+      showStatus(
+        els.downloadStatus,
+        `Override: forcing ${override}. Send will use that downloader type.`,
+        'ok'
+      );
+    }
   }
 
   function escapeHtml(value) {
@@ -197,6 +217,9 @@
     els.matchList.innerHTML = '';
     els.downloadActions.hidden = true;
     els.startedJobs.hidden = true;
+    els.entityOverride.value = 'auto';
+    rawMatches = [];
+    currentMatches = [];
     showStatus(els.downloadStatus, '');
 
     if (!url) {
@@ -217,16 +240,21 @@
         matches = [ytDlpFallback(url, settings.preferredMode)];
         showStatus(els.downloadStatus, 'No downloader matched. Offering yt-dlp fallback.', 'ok');
       } else {
+        // Drop Text matches on normal video pages unless preferred mode is Text / text site.
+        if (settings.preferredMode !== 'Text' && !isTextSiteUrl(url)) {
+          const withoutText = matches.filter((m) => resolveMatchEntity(m) !== 'Text');
+          if (withoutText.length) matches = withoutText;
+        }
         showStatus(els.downloadStatus, `${matches.length} match${matches.length === 1 ? '' : 'es'} found.`);
       }
-      currentMatches = matches;
-      renderMatches(matches);
+      rawMatches = matches;
+      applyOverrideAndRender();
     } catch (error) {
-      currentMatches = [ytDlpFallback(url, settings.preferredMode)];
-      renderMatches(currentMatches);
+      rawMatches = [ytDlpFallback(url, settings.preferredMode)];
+      applyOverrideAndRender();
       showStatus(
         els.downloadStatus,
-        `Match failed (${error.message}). You can still try yt-dlp fallback.`,
+        `Match failed (${error.message}). You can still try yt-dlp fallback or use Type override.`,
         'error'
       );
     } finally {
@@ -393,6 +421,16 @@
   els.btnSend.addEventListener('click', sendSelected);
   els.btnGotoQueue.addEventListener('click', () => setTab('queue'));
   els.btnRefreshQueue.addEventListener('click', refreshQueue);
+  els.entityOverride.addEventListener('change', () => {
+    if (!pendingUrl && !rawMatches.length) return;
+    applyOverrideAndRender();
+    if (els.entityOverride.value === 'auto' && rawMatches.length) {
+      showStatus(
+        els.downloadStatus,
+        `${rawMatches.length} match${rawMatches.length === 1 ? '' : 'es'} found.`
+      );
+    }
+  });
 
   els.queueList.addEventListener('click', async (event) => {
     const button = event.target.closest('.btn-cancel');

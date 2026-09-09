@@ -1,7 +1,7 @@
 {
   "name": "Cove Downloader Helper",
   "description": "Send page and link URLs to Cove downloaders (yt-dlp, text, audio, Reddit) with match picking and a live job queue.",
-  "version": "2.0",
+  "version": "1.0",
   "manifest_version": 3,
   "permissions": ["contextMenus", "storage", "tabs", "windows"],
   "host_permissions": ["http://*/*", "https://*/*"],
@@ -14,7 +14,12 @@
   },
   "action": {
     "default_title": "Download current page with Cove",
-    "default_icon": "icon128.png"
+    "default_icon": {
+      "16": "cove-icon-16.png",
+      "32": "cove-icon-32.png",
+      "48": "cove-icon-48.png",
+      "128": "cove-icon-128.png"
+    }
   },
   "content_scripts": [
     {
@@ -24,8 +29,16 @@
     }
   ],
   "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
-  }
+    "16": "cove-icon-16.png",
+    "32": "cove-icon-32.png",
+    "48": "cove-icon-48.png",
+    "128": "cove-icon-128.png",
+    "256": "cove-icon-256.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["cove-icon-32.png", "cove-icon-48.png", "icon.png"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ]
 }
