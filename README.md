@@ -59,18 +59,17 @@ Install the community downloaders from the [official extension registry](https:/
 ## Build / CI
 
 ```bash
-./build.sh
+./scripts/pack-extension.sh --force
+# or
+./build.sh --force
 ```
 
-Creates `builds/cove-downloader-helper-{version}.zip`.
+Creates a packed Chrome extension zip in `builds/`:
 
-On push to `master`/`main` (and manual workflow runs), GitHub Actions:
+- `cove-downloader-helper-{version}-chrome.zip` (preferred)
+- `cove-downloader-helper-{version}.zip` (alias)
 
-1. Builds `cove-downloader-helper-{version}.zip` from `src/`
-2. Uploads it as a workflow artifact
-3. Creates or updates the GitHub Release `v{version}` and attaches the zip
-
-Pull requests only build and upload the artifact (no release). Pushing a `v*` tag also publishes/updates that tag’s release.
+On every push to `master`/`main`, GitHub Actions packs the extension and publishes/updates the GitHub Release `v{version}` with those zip assets.
 
 ## Credits
 

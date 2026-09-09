@@ -1,22 +1,5 @@
 #!/usr/bin/env bash
-
-VERSION=$(jq -r ".version" ./src/manifest.json)
-
-if test -z "$VERSION"; then
-  echo "can't parse version from manifest file"
-  exit
-fi
-
-FILE=cove-downloader-helper-"$VERSION".zip
-
-if test -f "./builds/$FILE"; then
-  if [ "$1" == "--force" ]; then
-    rm -f "./builds/$FILE"
-  else
-    echo "file ./builds/$FILE already exists. if you want to rewrite it use argument --force"
-    exit
-  fi
-fi
-
-mkdir -p ./builds
-cd ./src && zip -9 -r ../builds/"$FILE" ./*
+# Compatibility wrapper — prefer scripts/pack-extension.sh
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+exec "$ROOT/scripts/pack-extension.sh" "$@"
