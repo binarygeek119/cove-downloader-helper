@@ -1,5 +1,9 @@
 # Cove Downloader Helper
 
+<p align="center">
+  <img src="src/icon.png" alt="Cove Downloader Helper logo" width="160" />
+</p>
+
 Browser extension that sends page and link URLs to your [Cove](https://github.com/yourcove/cove) instance so registered downloaders can fetch them.
 
 **This project is a fork of [Chrome MeTube Downloader](https://github.com/Rpsl/metube-browser-extension)** by Rpsl. The original extension queued URLs into [MeTube](https://github.com/alexta69/metube). This fork reworks that idea for Cove’s downloaders API, match/quality picking, in-page controls, and a live job queue.
