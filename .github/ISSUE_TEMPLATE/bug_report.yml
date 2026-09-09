@@ -1,0 +1,95 @@
+name: Bug report
+description: Something is broken in Cove Downloader Helper
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Use this only for the **browser extension**.
+        If Cove / yt-dlp / a downloader fails in Cove’s own UI, open an issue on [yourcove/cove](https://github.com/yourcove/cove/issues) instead.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong in one or two sentences?
+      placeholder: Left-click on a YouTube page opens the helper but match never returns…
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Exact steps someone else can follow.
+      placeholder: |
+        1. Load unpacked `src` (version x.y)
+        2. Set Cove URL in Settings
+        3. Left-click the toolbar icon on …
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension version
+      description: From `src/manifest.json` or chrome://extensions
+      placeholder: "1.0"
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      placeholder: Chrome 131 / Edge 131 / Brave …
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: Fedora 44 / Windows 11 / macOS …
+    validations:
+      required: false
+  - type: textarea
+    id: cove
+    attributes:
+      label: Cove setup
+      description: Cove version, how you run it (Docker/native), and which downloaders are installed.
+      placeholder: |
+        Cove: …
+        Run via: Docker
+        Downloaders: yt-dlp, Common Text, Common Audio, Reddit, Direct File
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Extension service worker console, helper Download tab errors, or relevant Cove job errors.
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I confirmed the same URL works (or fails) in Cove’s own Downloads UI
+          required: false
+        - label: This is about the browser extension, not only Cove server/yt-dlp install
+          required: true

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Cove app / downloaders (upstream)
+    url: https://github.com/yourcove/cove/issues
+    about: Issues with Cove itself, yt-dlp inside Cove, or official downloaders belong upstream.
+  - name: Official extension registry
+    url: https://github.com/yourcove/officialextensionregistry/issues
+    about: Problems installing or publishing Cove registry extensions.

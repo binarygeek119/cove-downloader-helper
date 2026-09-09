@@ -66,3 +66,10 @@ On push to `master`/`main`, pull requests, and version tags (`v*`), GitHub Actio
 
 - Forked from [Rpsl/metube-browser-extension](https://github.com/Rpsl/metube-browser-extension) (Chrome MeTube Downloader)
 - Targets [Cove](https://github.com/yourcove/cove) and community downloaders from [yourcove/officialextensionregistry](https://github.com/yourcove/officialextensionregistry)
+
+## Contributing
+
+- [Bug report](https://github.com/binarygeek119/cove-downloader-helper/issues/new?template=bug_report.yml)
+- [Feature request](https://github.com/binarygeek119/cove-downloader-helper/issues/new?template=feature_request.yml)
+
+For Cove server, yt-dlp inside Cove, or registry downloaders, prefer upstream: [yourcove/cove](https://github.com/yourcove/cove/issues).
