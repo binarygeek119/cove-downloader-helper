@@ -3,7 +3,6 @@
 const YTDLP_VIDEO_ID = 'cove.community.downloaders.ytdlp/video';
 const YTDLP_AUDIO_ID = 'cove.community.downloaders.ytdlp/audio';
 const TEXT_DOWNLOADER_ID = 'cove.community.downloaders.common-text/literotica';
-const APP_WINDOW_ID_KEY = 'coveHelperAppWindowId';
 const PENDING_KEY = 'coveHelperPending';
 
 const DEFAULT_SETTINGS = {

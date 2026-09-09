@@ -107,10 +107,34 @@
       queueAllMatches: els.queueAllMatches.checked,
       autoApplyMetadata: els.autoApplyMetadata.checked,
     };
+
+    if (next.coveUrl || next.showInPageButtons) {
+      const granted = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ type: 'request-host-permission' }, (response) => {
+          if (chrome.runtime.lastError) {
+            resolve(false);
+            return;
+          }
+          resolve(!!(response && response.ok));
+        });
+      });
+      if (!granted) {
+        els.settingsSaved.hidden = false;
+        els.settingsSaved.textContent =
+          'Settings saved locally, but site access was denied. Grant permission to talk to Cove and use in-page buttons.';
+        els.settingsSaved.className = 'status error';
+        await storageSet(next);
+        settings = await getSettings();
+        return;
+      }
+    }
+
     await storageSet(next);
     settings = await getSettings();
     fillSettingsForm(settings);
     els.settingsSaved.hidden = false;
+    els.settingsSaved.textContent = 'Settings saved.';
+    els.settingsSaved.className = 'ok';
     setTimeout(() => {
       els.settingsSaved.hidden = true;
     }, 2500);

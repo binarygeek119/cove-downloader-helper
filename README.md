@@ -82,3 +82,13 @@ On every push to `master`/`main`, GitHub Actions packs the extension and publish
 - [Feature request](https://github.com/binarygeek119/cove-downloader-helper/issues/new?template=feature_request.yml)
 
 For Cove server, yt-dlp inside Cove, or registry downloaders, prefer upstream: [yourcove/cove](https://github.com/yourcove/cove/issues).
+
+## Chrome Web Store
+
+Submission package and listing copy: see [store/STORE_LISTING.md](store/STORE_LISTING.md).  
+Privacy policy: [PRIVACY.md](PRIVACY.md).
+
+```bash
+./scripts/pack-extension.sh --force
+# upload builds/cove-downloader-helper-*-chrome.zip in the Developer Dashboard
+```

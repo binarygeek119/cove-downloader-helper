@@ -2,6 +2,8 @@ importScripts('shared.js');
 
 const MENU_LINK_ID = 'cove-send-link';
 const MENU_PAGE_ID = 'cove-send-page';
+const CONTENT_SCRIPT_ID = 'cove-inpage-buttons';
+const APP_TAB_ID_KEY = 'coveHelperAppTabId';
 
 function ensureContextMenus() {
   chrome.contextMenus.removeAll(() => {
@@ -31,17 +33,74 @@ function applyToolbarIcon() {
   });
 }
 
+async function hasBroadHostPermission() {
+  return chrome.permissions.contains({
+    origins: ['http://*/*', 'https://*/*'],
+  });
+}
+
+async function requestBroadHostPermission() {
+  const already = await hasBroadHostPermission();
+  if (already) return true;
+  return chrome.permissions.request({
+    origins: ['http://*/*', 'https://*/*'],
+  });
+}
+
+async function syncInPageContentScript() {
+  const settings = await getSettings();
+  const allowed = await hasBroadHostPermission();
+  const want = !!settings.showInPageButtons && allowed;
+
+  const existing = await chrome.scripting.getRegisteredContentScripts({
+    ids: [CONTENT_SCRIPT_ID],
+  });
+  const registered = existing && existing.length > 0;
+
+  if (want && !registered) {
+    await chrome.scripting.registerContentScripts([
+      {
+        id: CONTENT_SCRIPT_ID,
+        js: ['content.js'],
+        matches: ['http://*/*', 'https://*/*'],
+        runAt: 'document_idle',
+        persistAcrossSessions: true,
+      },
+    ]);
+  } else if (!want && registered) {
+    await chrome.scripting.unregisterContentScripts({ ids: [CONTENT_SCRIPT_ID] });
+  }
+}
+
 chrome.runtime.onInstalled.addListener(() => {
   ensureContextMenus();
   applyToolbarIcon();
+  syncInPageContentScript().catch((error) => console.warn('content script sync failed', error));
 });
 
 chrome.runtime.onStartup.addListener(() => {
   ensureContextMenus();
   applyToolbarIcon();
+  syncInPageContentScript().catch((error) => console.warn('content script sync failed', error));
 });
 
 applyToolbarIcon();
+syncInPageContentScript().catch(() => {});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'sync') return;
+  if (changes.showInPageButtons || changes.coveUrl) {
+    syncInPageContentScript().catch(() => {});
+  }
+});
+
+chrome.permissions.onAdded.addListener(() => {
+  syncInPageContentScript().catch(() => {});
+});
+
+chrome.permissions.onRemoved.addListener(() => {
+  syncInPageContentScript().catch(() => {});
+});
 
 async function setPending(url, tab) {
   await sessionSet({
@@ -55,47 +114,45 @@ async function setPending(url, tab) {
 
 async function openAppWindow(query) {
   const appUrl = chrome.runtime.getURL(`app.html${query || ''}`);
-  const session = await sessionGet([APP_WINDOW_ID_KEY]);
-  const existingId = session[APP_WINDOW_ID_KEY];
+  const session = await sessionGet([APP_TAB_ID_KEY]);
+  const existingId = session[APP_TAB_ID_KEY];
 
   if (existingId !== undefined && existingId !== null) {
     try {
-      const win = await chrome.windows.get(existingId);
-      if (win) {
-        const tabs = await chrome.tabs.query({ windowId: existingId });
-        if (tabs[0]) {
-          await chrome.tabs.update(tabs[0].id, { url: appUrl, active: true });
+      const tab = await chrome.tabs.get(existingId);
+      if (tab && tab.id !== undefined) {
+        await chrome.tabs.update(tab.id, { url: appUrl, active: true });
+        if (tab.windowId !== undefined) {
+          await chrome.windows.update(tab.windowId, { focused: true }).catch(() => {});
         }
-        await chrome.windows.update(existingId, { focused: true });
         return;
       }
     } catch (_) {
-      // Window gone; create a new one.
+      // Tab gone; create a new one.
     }
   }
 
-  const created = await chrome.windows.create({
-    url: appUrl,
-    type: 'popup',
-    width: 440,
-    height: 640,
-    focused: true,
-  });
+  const created = await chrome.tabs.create({ url: appUrl, active: true });
   if (created && created.id !== undefined) {
-    await sessionSet({ [APP_WINDOW_ID_KEY]: created.id });
+    await sessionSet({ [APP_TAB_ID_KEY]: created.id });
   }
 }
 
-chrome.windows.onRemoved.addListener(async (windowId) => {
-  const session = await sessionGet([APP_WINDOW_ID_KEY]);
-  if (session[APP_WINDOW_ID_KEY] === windowId) {
-    await sessionSet({ [APP_WINDOW_ID_KEY]: null });
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  const session = await sessionGet([APP_TAB_ID_KEY]);
+  if (session[APP_TAB_ID_KEY] === tabId) {
+    await sessionSet({ [APP_TAB_ID_KEY]: null });
   }
 });
 
 async function beginSendToCove(url, tab) {
   if (!isHttpUrl(url)) {
     throw new Error('Only http(s) URLs can be sent to Cove.');
+  }
+
+  const granted = await requestBroadHostPermission();
+  if (!granted) {
+    throw new Error('Site access permission is required to talk to Cove and read page URLs.');
   }
 
   const settings = await getSettings();
@@ -105,6 +162,7 @@ async function beginSendToCove(url, tab) {
   }
 
   await setPending(url, tab);
+  await syncInPageContentScript();
 
   if (settings.autoSend) {
     await openAppWindow('?tab=download&auto=1');
@@ -154,6 +212,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (message.type === 'get-settings') {
       sendResponse({ ok: true, settings: await getSettings() });
+      return;
+    }
+
+    if (message.type === 'request-host-permission') {
+      const granted = await requestBroadHostPermission();
+      if (granted) await syncInPageContentScript();
+      sendResponse({ ok: granted });
       return;
     }
 
