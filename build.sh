@@ -7,7 +7,7 @@ if test -z "$VERSION"; then
   exit
 fi
 
-FILE=metube-browser-extension-"$VERSION".zip
+FILE=cove-downloader-helper-"$VERSION".zip
 
 if test -f "./builds/$FILE"; then
   if [ "$1" == "--force" ]; then
@@ -18,4 +18,5 @@ if test -f "./builds/$FILE"; then
   fi
 fi
 
+mkdir -p ./builds
 cd ./src && zip -9 -r ../builds/"$FILE" ./*

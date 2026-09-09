@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cove Downloader Helper</title>
+    <link rel="stylesheet" href="app.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Cove Downloader Helper</h1>
+      <nav class="tabs" role="tablist">
+        <button type="button" class="tab active" data-tab="download" role="tab" aria-selected="true">Download</button>
+        <button type="button" class="tab" data-tab="queue" role="tab" aria-selected="false">Job Queue</button>
+        <button type="button" class="tab" data-tab="settings" role="tab" aria-selected="false">Settings</button>
+      </nav>
+    </header>
+
+    <main>
+      <section id="panel-download" class="panel active" role="tabpanel">
+        <p id="download-url" class="muted url-line"></p>
+        <p id="download-status" class="status" hidden></p>
+        <div id="download-loading" class="loading" hidden>Matching downloaders…</div>
+        <div id="match-list" class="match-list"></div>
+        <div id="download-actions" class="row" hidden>
+          <button type="button" id="btn-send" class="primary">Send to Cove</button>
+          <button type="button" id="btn-rematch" class="secondary">Rematch</button>
+        </div>
+        <div id="started-jobs" class="started-jobs" hidden>
+          <h2>Started jobs</h2>
+          <div id="started-jobs-list"></div>
+          <button type="button" id="btn-goto-queue" class="linkish">Open Job Queue</button>
+        </div>
+      </section>
+
+      <section id="panel-queue" class="panel" role="tabpanel" hidden>
+        <div class="row between">
+          <h2>Active jobs</h2>
+          <button type="button" id="btn-refresh-queue" class="secondary">Refresh</button>
+        </div>
+        <p id="queue-status" class="status" hidden></p>
+        <div id="queue-list" class="job-list"></div>
+        <details class="history-block">
+          <summary>Recent history</summary>
+          <div id="history-list" class="job-list"></div>
+        </details>
+        <p class="muted"><a id="open-cove-link" href="#" target="_blank" rel="noreferrer">Open Cove</a></p>
+      </section>
+
+      <section id="panel-settings" class="panel" role="tabpanel" hidden>
+        <form id="settings-form">
+          <label>
+            Cove URL
+            <input type="url" id="coveUrl" placeholder="http://127.0.0.1:5000" required />
+          </label>
+          <label>
+            API token (optional PAT)
+            <input type="password" id="apiToken" placeholder="cove_pat_…" autocomplete="off" />
+          </label>
+          <label>
+            Preferred mode
+            <select id="preferredMode">
+              <option value="Video">Video</option>
+              <option value="Audio">Audio</option>
+              <option value="Text">Text</option>
+            </select>
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" id="showInPageButtons" />
+            Show in-page buttons
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" id="autoSend" />
+            Auto-send (skip picker, use preferred defaults)
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" id="queueAllMatches" />
+            Queue all matches by default
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" id="autoApplyMetadata" />
+            Auto-apply metadata
+          </label>
+          <button type="submit" class="primary">Save settings</button>
+          <p id="settings-saved" class="ok" hidden>Settings saved.</p>
+        </form>
+        <div class="notes">
+          <p>
+            Requires a running
+            <a href="https://github.com/yourcove/cove" target="_blank" rel="noreferrer">Cove</a>
+            instance and downloaders from the
+            <a href="https://github.com/yourcove/officialextensionregistry" target="_blank" rel="noreferrer">official registry</a>:
+            yt-dlp, Common Text, Common Audio, and Reddit as needed.
+          </p>
+          <p>
+            Left-click the toolbar icon to download the current page. Right-click a link or page to send it.
+            Use Settings to turn in-page buttons on or off.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <script src="shared.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

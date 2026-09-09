@@ -1,0 +1,266 @@
+:root {
+  color-scheme: light dark;
+  --bg: #0f1419;
+  --panel: #171d25;
+  --text: #e7ecf1;
+  --muted: #9aa7b5;
+  --accent: #3d8bfd;
+  --accent-text: #fff;
+  --border: #2a3441;
+  --ok: #3dd68c;
+  --err: #ff6b6b;
+  --warn: #f0c14b;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4f6f8;
+    --panel: #ffffff;
+    --text: #1a2330;
+    --muted: #5b6b7c;
+    --border: #d5dde6;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  min-width: 360px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.app-header {
+  padding: 12px 14px 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.app-header h1 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+main {
+  padding: 14px;
+}
+
+.panel[hidden] {
+  display: none !important;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-weight: 550;
+}
+
+label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  font-weight: 450;
+}
+
+input[type="url"],
+input[type="password"],
+input[type="text"],
+select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  background: var(--panel);
+  color: var(--text);
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+button.secondary {
+  background: transparent;
+}
+
+button.linkish {
+  border: none;
+  background: none;
+  color: var(--accent);
+  padding: 0;
+  text-decoration: underline;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.row.between {
+  justify-content: space-between;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.url-line {
+  word-break: break-all;
+  margin: 0 0 10px;
+}
+
+.status {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+.status.error {
+  border-color: var(--err);
+  color: var(--err);
+}
+
+.status.ok {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.ok {
+  color: var(--ok);
+}
+
+.loading {
+  padding: 16px 0;
+  color: var(--muted);
+}
+
+.match-list,
+.job-list,
+.started-jobs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.match-card,
+.job-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  background: var(--panel);
+}
+
+.match-card header,
+.job-card header {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.match-title,
+.job-title {
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.progress {
+  height: 8px;
+  background: var(--bg);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.progress > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+}
+
+.notes {
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.notes a {
+  color: var(--accent);
+}
+
+.history-block {
+  margin-top: 16px;
+}
+
+.history-block summary {
+  cursor: pointer;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+h2 {
+  font-size: 14px;
+  margin: 0;
+}

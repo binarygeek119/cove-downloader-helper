@@ -1,120 +1,164 @@
-// 'use strict';
-chrome.runtime.onInstalled.addListener(function () {
-    // https://stackoverflow.com/questions/19377262/regex-for-youtube-url
+importScripts('shared.js');
+
+const MENU_LINK_ID = 'cove-send-link';
+const MENU_PAGE_ID = 'cove-send-page';
+
+function ensureContextMenus() {
+  chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
-        id: 'metube',
-        title: "Send to MeTube",
-        targetUrlPatterns: [
-            'https://www.youtube.com/*',
-            'https://m.youtube.com/*',
-            'https://youtu.be/*'
-        ],
-        contexts: ['link'],
+      id: MENU_LINK_ID,
+      title: 'Send link to Cove',
+      contexts: ['link'],
+      targetUrlPatterns: ['http://*/*', 'https://*/*'],
     });
+    chrome.contextMenus.create({
+      id: MENU_PAGE_ID,
+      title: 'Send page to Cove',
+      contexts: ['page'],
+      documentUrlPatterns: ['http://*/*', 'https://*/*'],
+    });
+  });
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  ensureContextMenus();
 });
 
-function sendVideoUrlToMetube(videoUrl, metubeUrl, format, advancedSettings, callback) {
-    console.log("Sending videoUrl=" + videoUrl + " to metubeUrl=" + metubeUrl);
+chrome.runtime.onStartup.addListener(() => {
+  ensureContextMenus();
+});
 
-    if (typeof callback !== 'function') {
-        callback = function () {
-        };
-    }
+async function setPending(url, tab) {
+  await sessionSet({
+    [PENDING_KEY]: {
+      url,
+      openedAt: Date.now(),
+      sourceTabId: tab && tab.id,
+    },
+  });
+}
 
-    let {hostname} = new URL(videoUrl)
+async function openAppWindow(query) {
+  const appUrl = chrome.runtime.getURL(`app.html${query || ''}`);
+  const session = await sessionGet([APP_WINDOW_ID_KEY]);
+  const existingId = session[APP_WINDOW_ID_KEY];
 
-    let postData = {
-      "quality": "best",
-      "format": format,
-      "url": videoUrl,
-      'auto_start': !advancedSettings['disable_auto_start'] ?? true
-    }
-
-
-    Object.keys(advancedSettings).forEach((key) => {
-      if (advancedSettings[key] && !['disable_auto_start'].includes(key) ) {
-        postData[key] = hostname.startsWith('www.') ? hostname.replace('www.', '') : hostname
+  if (existingId !== undefined && existingId !== null) {
+    try {
+      const win = await chrome.windows.get(existingId);
+      if (win) {
+        const tabs = await chrome.tabs.query({ windowId: existingId });
+        if (tabs[0]) {
+          await chrome.tabs.update(tabs[0].id, { url: appUrl, active: true });
+        }
+        await chrome.windows.update(existingId, { focused: true });
+        return;
       }
-    })
+    } catch (_) {
+      // Window gone; create a new one.
+    }
+  }
 
-    console.log(postData)
-    fetch(metubeUrl + "/add", {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(postData)
-    })
-        .then(response => response.json())
-        .then(function (response) {
-            if (response.status === 'ok') {
-                callback();
-            }
-        })
-        .catch(e => console.log("Ran into an unexpected error: " + e));
+  const created = await chrome.windows.create({
+    url: appUrl,
+    type: 'popup',
+    width: 440,
+    height: 640,
+    focused: true,
+  });
+  if (created && created.id !== undefined) {
+    await sessionSet({ [APP_WINDOW_ID_KEY]: created.id });
+  }
 }
 
-chrome.contextMenus.onClicked.addListener(function (item, tab) {
-    chrome.storage.sync.get(['metube', 'contextMenuClickBehavior', 'defaultFormat', 'advancedSettings'], function (data) {
-        if (data === undefined || !data.hasOwnProperty('metube') || data.metube === "") {
-            openTab(chrome.runtime.getURL('options.html'), tab);
-            return
-        }
-
-        let needToSwitch = (data.contextMenuClickBehavior === 'context-menu-send-current-url-and-switch');
-
-        sendVideoUrlToMetube(item.linkUrl, data.metube, data.defaultFormat, data.advancedSettings, function () {
-            if (needToSwitch) {
-                openTab(data.metube, tab);
-            }
-        });
-    });
+chrome.windows.onRemoved.addListener(async (windowId) => {
+  const session = await sessionGet([APP_WINDOW_ID_KEY]);
+  if (session[APP_WINDOW_ID_KEY] === windowId) {
+    await sessionSet({ [APP_WINDOW_ID_KEY]: null });
+  }
 });
 
-chrome.action.onClicked.addListener(function (tab) {
-    chrome.storage.sync.get(['metube', 'clickBehavior', 'defaultFormat', 'advancedSettings'], function (data) {
-        if (data === undefined || !data.hasOwnProperty('metube') || data.metube === "") {
-            openTab(chrome.runtime.getURL('options.html'), tab);
-            return
-        }
+async function beginSendToCove(url, tab) {
+  if (!isHttpUrl(url)) {
+    throw new Error('Only http(s) URLs can be sent to Cove.');
+  }
 
-        if (data.clickBehavior === 'go-to-metube') {
-            openTab(data.metube, tab);
-            return;
-        }
+  const settings = await getSettings();
+  if (!settings.coveUrl) {
+    await openAppWindow('?tab=settings');
+    return { openedSettings: true };
+  }
 
-        let needToSwitch = (data.clickBehavior === 'send-current-url-and-switch');
+  await setPending(url, tab);
 
-        chrome.tabs.query({
-            active: true,
-            lastFocusedWindow: true
-        }, function (tabs) {
-            // use this tab to get the youtube video URL
-            let videoUrl = tabs[0].url;
-            sendVideoUrlToMetube(videoUrl, data.metube, data.defaultFormat, data.advancedSettings, function () {
-                if (needToSwitch) {
-                    openTab(data.metube, tab);
-                }
-            });
-        });
-    });
-});
+  if (settings.autoSend) {
+    await openAppWindow('?tab=download&auto=1');
+  } else {
+    await openAppWindow('?tab=download');
+  }
 
-function openTab(url, currentTab) {
-    chrome.tabs.query({
-        url: url + "/*"
-    }, function (tabs) {
-        if (tabs.length !== 0) {
-            chrome.tabs.update(tabs[0].id, {
-                'active': true
-            }, () => {
-            });
-        } else {
-            chrome.tabs.create({
-                url: url,
-                index: currentTab.index + 1
-            });
-        }
-    });
+  return { ok: true };
 }
+
+chrome.action.onClicked.addListener(async (tab) => {
+  try {
+    const url = tab && tab.url;
+    if (!url || !isHttpUrl(url)) {
+      await openAppWindow('?tab=settings');
+      return;
+    }
+    await beginSendToCove(url, tab);
+  } catch (error) {
+    console.error('Cove left-click failed:', error);
+    await openAppWindow('?tab=download&error=' + encodeURIComponent(error.message || String(error)));
+  }
+});
+
+chrome.contextMenus.onClicked.addListener(async (item, tab) => {
+  try {
+    let url = null;
+    if (item.menuItemId === MENU_LINK_ID) {
+      url = item.linkUrl;
+    } else if (item.menuItemId === MENU_PAGE_ID) {
+      url = tab && tab.url;
+    }
+    if (!url) return;
+    await beginSendToCove(url, tab);
+  } catch (error) {
+    console.error('Cove context menu failed:', error);
+    await openAppWindow('?tab=download&error=' + encodeURIComponent(error.message || String(error)));
+  }
+});
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  (async () => {
+    if (!message || !message.type) {
+      sendResponse({ ok: false, error: 'Unknown message' });
+      return;
+    }
+
+    if (message.type === 'get-settings') {
+      sendResponse({ ok: true, settings: await getSettings() });
+      return;
+    }
+
+    if (message.type === 'send-to-cove') {
+      try {
+        const result = await beginSendToCove(message.url, sender.tab);
+        sendResponse({ ok: true, ...result });
+      } catch (error) {
+        sendResponse({ ok: false, error: error.message || String(error) });
+      }
+      return;
+    }
+
+    if (message.type === 'open-settings') {
+      await openAppWindow('?tab=settings');
+      sendResponse({ ok: true });
+      return;
+    }
+
+    sendResponse({ ok: false, error: 'Unhandled message type' });
+  })();
+  return true;
+});

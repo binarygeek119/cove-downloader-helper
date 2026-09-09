@@ -1,74 +1,14 @@
 <!DOCTYPE html>
-<html lang="English">
+<html lang="en">
   <head>
-    <title>MeTube Downloader</title>
-    <style>
-    body {
-      padding: 0 20px 20px 20px;
-      min-width: 400px;
-      font-size: 15px;
-    }
-    input {
-      margin: 5px;
-      outline: none;
-    }
-    textarea {
-      width: 100%;
-      height: 100px;
-    }
-    .hidden {
-      display: none;
-    }
-    #saved {
-      color: green;
-    }
-    </style>
+    <meta charset="utf-8" />
+    <title>Cove Downloader Helper Settings</title>
+    <meta http-equiv="refresh" content="0; url=app.html?tab=settings" />
+    <script>
+      location.replace('app.html?tab=settings');
+    </script>
   </head>
-
   <body>
-    <p>This extension is context menu button for sending links of youtube videos into you own instance of MeTube</p>
-    <p>This extension won't work without installed MeTube. For additional instructions see <a href="https://github.com/alexta69/metube" target="_blank">github page of MeTube</a>.</p>
-    <p>If you have some troubles with extension you can open issue on github page of extension.</p>
-    <form id="form">
-      <h3>Settings</h3>
-      <label for="metube">Url of MeTube</label><input type="url" placeholder="http://0.0.0.0:8081/" name="metube" id="metube">
-      <br><br>
-      <label for="default_format">Video format:</label>
-
-      <select name="default_format" id="default_format">
-        <option value="any">Any</option>
-        <option value="mp4">MP4</option>
-        <option value="m4a">M4A</option>
-        <option value="mp3">MP3</option>
-        <option value="opus">OPUS</option>
-        <option value="wav">WAV</option>
-        <option value="thumbnail">Thumbnail</option>
-      </select>
-
-      <h4>When you left-click on the extension icon, you'd like it to:</h4>
-      <input type="radio" name="click-behavior" id="go-to-metube" value="go-to-metube" checked><label for="go-to-metube">Go to MeTube URL</label><br>
-      <input type="radio" name="click-behavior" id="send-current-url" value="send-current-url"><label for="send-current-url">Send current tab URL to MeTube (no tab switch)</label><br>
-      <input type="radio" name="click-behavior" id="send-current-url-and-switch" value="send-current-url-and-switch"><label for="send-current-url-and-switch">Send current tab URL to MeTube and switch to MeTube</label><br>
-
-      <h4>When you right-click on video preview, you'd like it to:</h4>
-      <input type="radio" name="context-menu-click-behavior" id="context-menu-send-current-url" value="context-menu-send-current-url" checked><label for="context-menu-send-current-url">Send the video URL to MeTube (no tab switch)</label><br>
-      <input type="radio" name="context-menu-click-behavior" id="context-menu-send-current-url-and-switch" value="context-menu-send-current-url-and-switch"><label for="context-menu-send-current-url-and-switch">Send the video URL to MeTube and switch to MeTube</label><br>
-
-      <h4>Advanced Settings:</h4>
-      <div id="advanced_settings">
-        <input type="checkbox" name="folder" id="folder" value="true"><label for="folder">Use subfolder based on the Hostname of the URL</label><br>
-        <input type="checkbox" name="custom_name_prefix" id="custom_name_prefix" value="true"><label for="custom_name_prefix">Use name-prefix based on the Hostname of the URL</label><br>
-        <input type="checkbox" name="disable_auto_start" id="disable_auto_start" value="true"><label for="disable_auto_start">Disable auto start of Downloads</label><br>
-      </div>
-
-      <h3>Additional sites</h3>
-      <p>Youtube-dl support <a href="https://github.com/ytdl-org/youtube-dl/blob/master/docs/supportedsites.md" target="_blank">many another sites</a> except youtube. You can add mask url's of this sites in textfield bellow but it can affect performance and we have not tested them support</p>
-      <p><textarea name="additional" id="additional" placeholder="https://vimeo.com/*
-https://video.disney.com/*"></textarea></p>
-      <button type='submit'>Save settings</button>
-      <p id="saved" class="hidden">Settings saved!</p>
-      <p>&nbsp;</p>
-    </form>
+    <p><a href="app.html?tab=settings">Open Settings</a></p>
   </body>
-  <script src="options.js"></script>
 </html>

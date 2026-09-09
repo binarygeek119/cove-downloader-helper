@@ -1,24 +1,31 @@
 {
-  "name": "MeTube Downloader",
-  "description": "Use the context menu to send video into MeTube application",
-  "version": "1.9",
+  "name": "Cove Downloader Helper",
+  "description": "Send page and link URLs to Cove downloaders (yt-dlp, text, audio, Reddit) with match picking and a live job queue.",
+  "version": "2.0",
   "manifest_version": 3,
-  "permissions": ["contextMenus", "storage", "tabs"],
+  "permissions": ["contextMenus", "storage", "tabs", "windows"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "background": {
     "service_worker": "background.js"
   },
   "options_ui": {
     "page": "options.html",
-    "browser_style": true
+    "open_in_tab": true
   },
   "action": {
-    "default_title": "",
+    "default_title": "Download current page with Cove",
     "default_icon": "icon128.png"
   },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "icons": {
-   "16": "icon16.png",
-   "48": "icon48.png",
-  "128": "icon128.png"
- }
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
 }
