@@ -33,17 +33,21 @@ function applyToolbarIcon() {
   });
 }
 
+const HOST_ORIGINS = ['http://*/*', 'https://*/*'];
+
 async function hasBroadHostPermission() {
   return chrome.permissions.contains({
-    origins: ['http://*/*', 'https://*/*'],
+    origins: HOST_ORIGINS,
   });
 }
 
-async function requestBroadHostPermission() {
-  const already = await hasBroadHostPermission();
-  if (already) return true;
+/**
+ * Request optional host access. Must not await anything before
+ * chrome.permissions.request or Chrome drops the user-gesture and the prompt fails.
+ */
+function requestBroadHostPermission() {
   return chrome.permissions.request({
-    origins: ['http://*/*', 'https://*/*'],
+    origins: HOST_ORIGINS,
   });
 }
 
@@ -62,7 +66,7 @@ async function syncInPageContentScript() {
       {
         id: CONTENT_SCRIPT_ID,
         js: ['content.js'],
-        matches: ['http://*/*', 'https://*/*'],
+        matches: HOST_ORIGINS,
         runAt: 'document_idle',
         persistAcrossSessions: true,
       },
@@ -150,6 +154,7 @@ async function beginSendToCove(url, tab) {
     throw new Error('Only http(s) URLs can be sent to Cove.');
   }
 
+  // First await must be permissions.request to keep the user gesture.
   const granted = await requestBroadHostPermission();
   if (!granted) {
     throw new Error('Site access permission is required to talk to Cove and read page URLs.');
@@ -162,7 +167,11 @@ async function beginSendToCove(url, tab) {
   }
 
   await setPending(url, tab);
-  await syncInPageContentScript();
+  try {
+    await syncInPageContentScript();
+  } catch (error) {
+    console.warn('content script sync failed', error);
+  }
 
   if (settings.autoSend) {
     await openAppWindow('?tab=download&auto=1');
@@ -173,34 +182,43 @@ async function beginSendToCove(url, tab) {
   return { ok: true };
 }
 
-chrome.action.onClicked.addListener(async (tab) => {
-  try {
-    const url = tab && tab.url;
-    if (!url || !isHttpUrl(url)) {
-      await openAppWindow('?tab=settings');
-      return;
+chrome.action.onClicked.addListener((tab) => {
+  const url = tab && tab.url;
+  const run = async () => {
+    try {
+      if (!url || !isHttpUrl(url)) {
+        await openAppWindow('?tab=settings');
+        return;
+      }
+      await beginSendToCove(url, tab);
+    } catch (error) {
+      console.error('Cove left-click failed:', error);
+      const message = error && error.message ? error.message : String(error);
+      await openAppWindow('?tab=download&error=' + encodeURIComponent(message));
     }
-    await beginSendToCove(url, tab);
-  } catch (error) {
-    console.error('Cove left-click failed:', error);
-    await openAppWindow('?tab=download&error=' + encodeURIComponent(error.message || String(error)));
-  }
+  };
+  // Kick off without awaiting other work first so permission request stays gesture-bound.
+  void run();
 });
 
-chrome.contextMenus.onClicked.addListener(async (item, tab) => {
-  try {
-    let url = null;
-    if (item.menuItemId === MENU_LINK_ID) {
-      url = item.linkUrl;
-    } else if (item.menuItemId === MENU_PAGE_ID) {
-      url = tab && tab.url;
+chrome.contextMenus.onClicked.addListener((item, tab) => {
+  const run = async () => {
+    try {
+      let url = null;
+      if (item.menuItemId === MENU_LINK_ID) {
+        url = item.linkUrl;
+      } else if (item.menuItemId === MENU_PAGE_ID) {
+        url = tab && tab.url;
+      }
+      if (!url) return;
+      await beginSendToCove(url, tab);
+    } catch (error) {
+      console.error('Cove context menu failed:', error);
+      const message = error && error.message ? error.message : String(error);
+      await openAppWindow('?tab=download&error=' + encodeURIComponent(message));
     }
-    if (!url) return;
-    await beginSendToCove(url, tab);
-  } catch (error) {
-    console.error('Cove context menu failed:', error);
-    await openAppWindow('?tab=download&error=' + encodeURIComponent(error.message || String(error)));
-  }
+  };
+  void run();
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
