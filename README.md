@@ -64,7 +64,13 @@ Install the community downloaders from the [official extension registry](https:/
 
 Creates `builds/cove-downloader-helper-{version}.zip`.
 
-On push to `master`/`main`, pull requests, and version tags (`v*`), GitHub Actions packages the extension and uploads the zip as a workflow artifact. Tags also attach the zip to a GitHub Release.
+On push to `master`/`main` (and manual workflow runs), GitHub Actions:
+
+1. Builds `cove-downloader-helper-{version}.zip` from `src/`
+2. Uploads it as a workflow artifact
+3. Creates or updates the GitHub Release `v{version}` and attaches the zip
+
+Pull requests only build and upload the artifact (no release). Pushing a `v*` tag also publishes/updates that tag’s release.
 
 ## Credits
 
