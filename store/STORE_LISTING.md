@@ -26,11 +26,14 @@ Upload:
 | **Language** | English |
 | **Homepage** | https://github.com/binarygeek119/cove-downloader-helper |
 | **Support** | https://github.com/binarygeek119/cove-downloader-helper/issues |
+| **Mature / age** | **18+ only** — intended for adult users; not for children |
 
 ### Detailed description (paste)
 
 ```text
 Cove Downloader Helper connects your browser to your self-hosted Cove media library.
+
+18+ only. This extension is intended for adult users and is not directed at children.
 
 Send the current page or a link to Cove so registered downloaders (yt-dlp, Common Text, Common Audio, Reddit, Direct File, and others) can fetch media into your library.
 

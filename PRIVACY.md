@@ -3,13 +3,13 @@
 **Last updated:** 2026-09-09
 
 **Extension:** Cove Downloader Helper  
+**Audience:** Adults 18+ only  
 **Developer:** binarygeek119  
 **Source:** https://github.com/binarygeek119/cove-downloader-helper
 
 ## Overview
 
-Cove Downloader Helper is a Chrome extension that helps you send web page and link URLs to **your own** self-hosted [Cove](https://github.com/yourcove/cove) instance so Cove downloaders (such as yt-dlp) can retrieve media. The extension is designed for local / self-hosted use.
-
+Cove Downloader Helper is a Chrome extension for **adult (18+) users** that helps you send web page and link URLs to **your own** self-hosted [Cove](https://github.com/yourcove/cove) instance so Cove downloaders (such as yt-dlp) can retrieve media. The extension is designed for local / self-hosted use.
 ## Data we collect
 
 This extension does **not** collect analytics, advertising identifiers, or account data for the developer.
@@ -53,9 +53,11 @@ If you use Cove with third-party downloaders (for example yt-dlp contacting medi
 - Extension storage can be cleared by removing the extension or clearing site/extension data in Chrome.
 - Media files and job history retained by Cove are controlled by your Cove instance, not by this extension.
 
-## Children’s privacy
+## Children’s privacy / age restriction
 
-This extension is not directed at children under 13.
+**This extension is intended only for adults (18+).**
+
+It is not directed at children under 18, and we do not knowingly collect personal information from anyone under 18. If you believe a minor has provided information through this extension, contact us via the project issues page so it can be addressed. Do not use this extension if you are under 18.
 
 ## Changes
 
