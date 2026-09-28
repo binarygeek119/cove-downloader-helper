@@ -85,10 +85,10 @@ The refresh token has to be minted for this scope only:
 That scope belongs to the current API host `chromewebstore.googleapis.com`. The old host `www.googleapis.com/chromewebstore/v1.1` rejects it with “OAuth2 scope name is invalid or it refers to a newer scope”. In the [OAuth playground](https://developers.google.com/oauthplayground):
 
 1. Enable **Chrome Web Store API** on the same Google Cloud project as the OAuth client.
-2. Open the gear icon, choose **Use your own OAuth credentials**, and enter the client ID and secret. The client’s redirect URI must be `https://developers.google.com/oauthplayground`.
+2. Open the gear icon. Choose **Use your own OAuth credentials**, enter the client ID and secret, and set **Access type** to **Offline**. The client’s redirect URI must be `https://developers.google.com/oauthplayground`.
 3. In **Input your own scopes**, enter `https://www.googleapis.com/auth/chromewebstore` and click **Authorize APIs**. Sign in with the account that owns the store item.
-4. Click **Exchange authorization code for tokens** and copy the refresh token into `CHROME_WEBSTORE_REFRESH_TOKEN`.
-5. To test, set the request URI to `https://chromewebstore.googleapis.com/v2/publishers/PUBLISHER_ID/items/okmkahgbcigkpmaagpddnadpffjpibgm:fetchStatus` and send a GET. Do not put the scope URL in that box.
+4. Click **Exchange authorization code for tokens**. Copy the `refresh_token` value into `CHROME_WEBSTORE_REFRESH_TOKEN`.
+5. The playground then puts the scope string in **Request URI** and a GET of that address returns the “newer scope / legacy API” error. That response is not a failed token. Replace the Request URI with `https://chromewebstore.googleapis.com/v2/publishers/PUBLISHER_ID/items/okmkahgbcigkpmaagpddnadpffjpibgm:fetchStatus` and send the GET again.
 
 `CHROME_EXTENSION_ID` is optional. Set it only to publish a different item than `okmkahgbcigkpmaagpddnadpffjpibgm`.
 
