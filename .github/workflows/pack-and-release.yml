@@ -23,6 +23,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Scan for vulnerabilities
+        run: node scripts/scan-vulnerabilities.mjs
+
+      - name: Scan supported sites
+        run: node scripts/scan-sites.mjs
+
       - name: Read version
         id: meta
         run: |
@@ -34,9 +40,6 @@ jobs:
 
       - name: Check layout files
         run: node scripts/check-layouts.mjs
-
-      - name: Scan supported sites
-        run: node scripts/scan-sites.mjs
 
       - name: Pack extension
         run: |

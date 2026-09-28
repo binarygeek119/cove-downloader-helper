@@ -103,6 +103,8 @@ That scope belongs to the current API host `chromewebstore.googleapis.com`. The 
 
 Create the store item once in the Developer Dashboard (listing and privacy tabs filled in). Until the secrets exist, the store job logs a warning and succeeds. A push that does not raise `version` leaves the store item as it is. A manual run can turn off **Publish a newer package to the Chrome Web Store**.
 
+Pull requests, pushes to `master`/`main`, and a weekly run of [`.github/workflows/scan-vulnerabilities.yml`](.github/workflows/scan-vulnerabilities.yml) scan for vulnerabilities. CodeQL analyzes the extension JavaScript. The run fails when the manifest, pages, or layouts add remote code, required access to every site, or a committed secret.
+
 ## Credits
 
 - Forked from [Rpsl/metube-browser-extension](https://github.com/Rpsl/metube-browser-extension) (Chrome MeTube Downloader)
