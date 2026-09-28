@@ -1,4 +1,4 @@
-importScripts('shared.js');
+importScripts('shared.js', 'layout-schema.js');
 
 const MENU_LINK_ID = 'cove-send-link';
 const MENU_PAGE_ID = 'cove-send-page';
@@ -77,7 +77,11 @@ async function injectDownloaderButtonIntoOpenTabs() {
 async function syncInPageContentScript() {
   const settings = await getSettings();
   const allowed = await hasBroadHostPermission();
-  const want = (!!settings.showInPageButtons || !!settings.showOnSupportedSites) && allowed;
+  const want =
+    (!!settings.showInPageButtons ||
+      !!settings.showOnSupportedSites ||
+      !!settings.showStylizedDownloadButton) &&
+    allowed;
 
   const existing = await chrome.scripting.getRegisteredContentScripts({
     ids: [CONTENT_SCRIPT_ID],
@@ -122,7 +126,12 @@ syncInPageContentScript().catch(() => {});
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'sync') return;
-  if (changes.showInPageButtons || changes.showOnSupportedSites || changes.coveUrl) {
+  if (
+    changes.showInPageButtons ||
+    changes.showOnSupportedSites ||
+    changes.showStylizedDownloadButton ||
+    changes.coveUrl
+  ) {
     syncInPageContentScript().catch(() => {});
   }
 });
@@ -135,14 +144,60 @@ chrome.permissions.onRemoved.addListener(() => {
   syncInPageContentScript().catch(() => {});
 });
 
-async function setPending(url, tab) {
+async function setPending(url, tab, entity) {
+  const pending = {
+    url,
+    openedAt: Date.now(),
+    sourceTabId: tab && tab.id,
+  };
+  if (entity === 'Video' || entity === 'Image' || entity === 'Text') {
+    pending.entity = entity;
+  }
   await sessionSet({
-    [PENDING_KEY]: {
-      url,
-      openedAt: Date.now(),
-      sourceTabId: tab && tab.id,
-    },
+    [PENDING_KEY]: pending,
   });
+}
+
+function placementFromEntity(entity) {
+  if (entity !== 'Video' && entity !== 'Image' && entity !== 'Text') return null;
+  return {
+    entity,
+    strict: entity === 'Image' || entity === 'Text',
+  };
+}
+
+let cachedLayouts = null;
+
+async function loadSiteLayouts() {
+  if (cachedLayouts) return cachedLayouts;
+  const layouts = [];
+  try {
+    const indexResponse = await fetch(chrome.runtime.getURL('layouts/index.json'));
+    if (indexResponse.ok) {
+      const names = await indexResponse.json();
+      if (Array.isArray(names)) {
+        for (const name of names) {
+          if (typeof name !== 'string' || !/^[a-z0-9-]+\.lay$/i.test(name)) continue;
+          try {
+            const response = await fetch(chrome.runtime.getURL(`layouts/${name}`));
+            if (!response.ok) continue;
+            const data = await response.json();
+            if (validateLayout(data).length) {
+              console.warn('Ignoring invalid layout', name);
+              continue;
+            }
+            layouts.push(data);
+          } catch (error) {
+            console.warn('Ignoring unreadable layout', name, error);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('Layout index unavailable', error);
+  }
+  cachedLayouts = layouts;
+  return layouts;
 }
 
 async function openAppWindow(query) {
@@ -178,10 +233,12 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
   }
 });
 
-async function beginSendToCove(url, tab) {
+async function beginSendToCove(url, tab, placement) {
   if (!isHttpUrl(url)) {
     throw new Error('Only http(s) URLs can be sent to Cove.');
   }
+
+  const normalizedPlacement = placementFromEntity(placement && placement.entity);
 
   // First await must be permissions.request to keep the user gesture.
   const granted = await requestBroadHostPermission();
@@ -195,7 +252,22 @@ async function beginSendToCove(url, tab) {
     return { openedSettings: true };
   }
 
-  await setPending(url, tab);
+  if (normalizedPlacement && normalizedPlacement.strict) {
+    let matches = [];
+    try {
+      matches = await matchDownloaders(settings, url);
+    } catch (error) {
+      throw new Error(
+        (error && error.message) || `${normalizedPlacement.entity} is not supported for this page.`
+      );
+    }
+    const aligned = matches.filter((match) => resolveMatchEntity(match) === normalizedPlacement.entity);
+    if (!aligned.length) {
+      throw new Error(`${normalizedPlacement.entity} is not supported for this page.`);
+    }
+  }
+
+  await setPending(url, tab, normalizedPlacement && normalizedPlacement.entity);
   try {
     await syncInPageContentScript();
   } catch (error) {
@@ -272,9 +344,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return;
     }
 
+    if (message.type === 'get-stylized-layout') {
+      const settings = await getSettings();
+      if (!settings.showStylizedDownloadButton) {
+        sendResponse({ ok: true, targets: [] });
+        return;
+      }
+      const pageUrl = (sender.tab && sender.tab.url) || '';
+      const targets = matchLayoutTargets(await loadSiteLayouts(), pageUrl);
+      sendResponse({ ok: true, targets });
+      return;
+    }
+
     if (message.type === 'send-to-cove') {
       try {
-        const result = await beginSendToCove(message.url, sender.tab);
+        const result = await beginSendToCove(message.url, sender.tab, { entity: message.entity });
         sendResponse({ ok: true, ...result });
       } catch (error) {
         sendResponse({ ok: false, error: error.message || String(error) });

@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "hosts": ["pornhub.com"],
+  "targets": [
+    {
+      "id": "video",
+      "kind": "video",
+      "path": "/view_video.php",
+      "anchor": { "selector": ".video-wrapper .video-actions-tabs", "insert": "beforeend" },
+      "button": {
+        "size": "medium",
+        "showText": true,
+        "label": "Download",
+        "shape": "rounded",
+        "colors": {
+          "background": "#ff9000",
+          "text": "#ffffff",
+          "icon": "#ffffff",
+          "border": "#ff9000",
+          "hoverBackground": "#ffa31a"
+        }
+      }
+    },
+    {
+      "id": "album",
+      "kind": "image",
+      "path": "/album",
+      "anchor": { "selector": ".photoAlbum", "insert": "beforeend" },
+      "button": {
+        "size": "medium",
+        "showText": true,
+        "label": "Download",
+        "shape": "rounded",
+        "colors": {
+          "background": "#ff9000",
+          "text": "#ffffff",
+          "icon": "#ffffff",
+          "border": "#ff9000",
+          "hoverBackground": "#ffa31a"
+        }
+      }
+    },
+    {
+      "id": "gifs",
+      "kind": "gif",
+      "path": "/gifs",
+      "anchor": { "selector": ".gifVideoBlock", "insert": "beforeend" },
+      "button": {
+        "size": "small",
+        "showText": false,
+        "label": "Download",
+        "shape": "rounded",
+        "colors": {
+          "background": "#ff9000",
+          "text": "#ffffff",
+          "icon": "#ffffff",
+          "border": "#ff9000",
+          "hoverBackground": "#ffa31a"
+        }
+      }
+    }
+  ]
+}
