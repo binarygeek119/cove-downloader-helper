@@ -77,6 +77,25 @@
           "hoverBackground": "#ffa31a"
         }
       }
+    },
+    {
+      "id": "gif",
+      "kind": "gif",
+      "path": "/gif",
+      "anchor": { "selector": "ul.votingWrap > li:has(#favoriteGifButton)", "insert": "afterend" },
+      "button": {
+        "size": "small",
+        "showText": false,
+        "label": "Download",
+        "shape": "rounded",
+        "colors": {
+          "background": "#ff9000",
+          "text": "#ffffff",
+          "icon": "#ffffff",
+          "border": "#ff9000",
+          "hoverBackground": "#ffa31a"
+        }
+      }
     }
   ]
 }
