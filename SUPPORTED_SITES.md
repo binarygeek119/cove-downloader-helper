@@ -8,7 +8,7 @@ These controls are not limited to this list:
 - Right-click **Send to Cove** sends a link or the page.
 - **Show on all pages** shows the same bubble on every page.
 
-**Show stylized download button** draws a site-styled button only where a layout file matches. Pornhub is the only layout included right now. See [src/layouts/README.md](src/layouts/README.md) to add another site.
+**Show stylized download button** draws a site-styled button only where a layout file matches. Pornhub and YouPorn have layouts. See [src/layouts/README.md](src/layouts/README.md) to add another site.
 
 Cove can also add hosts from the downloaders installed on your instance. Those extra hosts are not listed here. Sending a URL still depends on the downloaders installed in Cove. This page is what the extension treats as a supported site.
 
@@ -45,7 +45,7 @@ Cove can also add hosts from the downloaders installed on your instance. Those e
 | xHamster | `xhamster.com` | Yes | No | |
 | SpankBang | `spankbang.com` | Yes | No | |
 | Eporner | `eporner.com` | Yes | No | |
-| YouPorn | `youporn.com` | Yes | No | |
+| YouPorn | `youporn.com` | Yes | Yes | Watch pages. See below. |
 | RedTube | `redtube.com` | Yes | No | |
 | TNAFlix | `tnaflix.com` | Yes | No | |
 | Motherless | `motherless.com` | Yes | No | |
@@ -64,3 +64,12 @@ Turn on **Show stylized download button**. These pages get a button. An image cl
 | Gif grid | `/gif` | Icon on each gif block | Image |
 
 `path` is a prefix, so `/photo` also matches `/photos` and `/gif` also matches `/gifs`. `/album/...` does not match.
+
+## YouPorn stylized button
+
+Turn on **Show stylized download button**. A watch page gets an icon-only button in the action row, in the space after Flag. The icon uses the same gray as Favorite, Add to collection, Share, and Flag.
+
+| Page | Path | Button | Sends |
+| --- | --- | --- | --- |
+| Watch | `/watch` | Icon after Flag | Video |
+

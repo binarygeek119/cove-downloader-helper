@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "hosts": ["youporn.com"],
+  "targets": [
+    {
+      "id": "watch",
+      "kind": "video",
+      "path": "/watch",
+      "anchor": { "selector": "#videoFlagPopButton", "insert": "afterend" },
+      "button": {
+        "size": "small",
+        "showText": false,
+        "label": "Download",
+        "shape": "square",
+        "colors": {
+          "background": "#000000",
+          "text": "#bbbbbb",
+          "icon": "#bbbbbb",
+          "border": "#000000",
+          "hoverBackground": "#000000"
+        }
+      }
+    }
+  ]
+}
