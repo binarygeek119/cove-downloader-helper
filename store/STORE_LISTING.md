@@ -27,7 +27,7 @@ Add these repository secrets ([Chrome Web Store API](https://developer.chrome.co
 | `CHROME_WEBSTORE_CLIENT_ID` | OAuth client ID |
 | `CHROME_WEBSTORE_CLIENT_SECRET` | OAuth client secret |
 | `CHROME_WEBSTORE_REFRESH_TOKEN` | Refresh token for scope `https://www.googleapis.com/auth/chromewebstore` |
-| `CHROME_EXTENSION_ID` | Store item ID |
+| `CHROME_EXTENSION_ID` | `okmkahgbcigkpmaagpddnadpffjpibgm` |
 | `CHROME_PUBLISHER_ID` | Publisher ID from Developer Dashboard → Publisher → Settings |
 
 The job skips with a warning until every secret is set. Raise `version` in `src/manifest.json` before each publish; the store rejects an upload that does not increase it.
