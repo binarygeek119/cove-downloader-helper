@@ -42,11 +42,7 @@
     }
     button:hover { background: var(--cove-hover); }
     svg {
-      fill: none;
-      stroke: var(--cove-icon);
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
+      fill: var(--cove-icon);
       flex: 0 0 auto;
     }
     button[data-size="small"] { height: 28px; font-size: 12px; }
@@ -58,9 +54,9 @@
     button[data-size="small"][data-text="0"] { width: 28px; padding: 0; }
     button[data-size="medium"][data-text="0"] { width: 36px; padding: 0; }
     button[data-size="large"][data-text="0"] { width: 44px; padding: 0; }
-    button[data-size="small"] svg { width: 14px; height: 14px; }
-    button[data-size="medium"] svg { width: 16px; height: 16px; }
-    button[data-size="large"] svg { width: 20px; height: 20px; }
+    button[data-size="small"] svg { width: 18px; height: 10px; }
+    button[data-size="medium"] svg { width: 22px; height: 12px; }
+    button[data-size="large"] svg { width: 26px; height: 14px; }
     button[data-shape="square"] { border-radius: 0; }
     button[data-shape="rounded"] { border-radius: 8px; }
     button[data-shape="pill"] { border-radius: 999px; }
@@ -386,10 +382,11 @@
     button.title = label;
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 24 24');
+    // Font Awesome Free 6.7.2 chevron-down. https://fontawesome.com/license/free (CC BY 4.0)
+    svg.setAttribute('viewBox', '41.3 169.4 429.4 237.2');
     svg.setAttribute('aria-hidden', 'true');
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', 'M12 3v12M12 15l4.5-4.5M12 15l-4.5-4.5M4 21h16');
+    path.setAttribute('d', 'M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z');
     svg.appendChild(path);
     button.appendChild(svg);
     if (buttonSpec.showText) {
