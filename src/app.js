@@ -877,6 +877,7 @@
   chrome.runtime.onMessage.addListener((message) => {
     if (!message || message.type !== 'show-job-queue') return;
     if (!document.body.classList.contains('side-panel')) return;
+    if (!normalizeCoveUrl(settings && settings.coveUrl)) return;
     setTab('queue');
   });
 
@@ -1008,11 +1009,15 @@
     await loadClearedHistory();
 
     const errorParam = params.get('error');
-    if (errorParam) {
-      showStatus(els.downloadStatus, errorParam, 'error');
+    const requestedTab = ['download', 'videos', 'queue', 'settings'].includes(currentTab) ? currentTab : 'download';
+    const needsSetup = !normalizeCoveUrl(settings && settings.coveUrl);
+    if (needsSetup) {
+      if (errorParam) showStatus(els.coveTestStatus, errorParam, 'error');
+      setTab('settings');
+    } else {
+      if (errorParam) showStatus(els.downloadStatus, errorParam, 'error');
+      setTab(requestedTab);
     }
-
-    setTab(['download', 'videos', 'queue', 'settings'].includes(currentTab) ? currentTab : 'download');
     const storedSelector = await sessionGet(['eromeSelector']);
     if (storedSelector.eromeSelector) applyEromeSelector(storedSelector.eromeSelector);
     startVideoPolling();
