@@ -37,7 +37,7 @@ The extension does **not** sell user data, does not use data for advertising, an
 Optional access to `http://*/*` and `https://*/*` is requested so the extension can:
 
 1. Call the Cove API at whatever origin you configure (often a LAN or localhost URL)
-2. Optionally show the downloader button on every page you visit
+2. Optionally show the bottom-right download bubble on every page you visit, or only on supported sites
 3. Read the page or link URL you choose to send
 
 You can deny site access; core settings still save, but talking to Cove and the downloader button on every page will not work until permission is granted.

@@ -77,7 +77,7 @@ async function injectDownloaderButtonIntoOpenTabs() {
 async function syncInPageContentScript() {
   const settings = await getSettings();
   const allowed = await hasBroadHostPermission();
-  const want = !!settings.showInPageButtons && allowed;
+  const want = (!!settings.showInPageButtons || !!settings.showOnSupportedSites) && allowed;
 
   const existing = await chrome.scripting.getRegisteredContentScripts({
     ids: [CONTENT_SCRIPT_ID],
@@ -122,7 +122,7 @@ syncInPageContentScript().catch(() => {});
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'sync') return;
-  if (changes.showInPageButtons || changes.coveUrl) {
+  if (changes.showInPageButtons || changes.showOnSupportedSites || changes.coveUrl) {
     syncInPageContentScript().catch(() => {});
   }
 });
@@ -258,7 +258,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     if (message.type === 'get-settings') {
-      sendResponse({ ok: true, settings: await getSettings() });
+      const settings = await getSettings();
+      const extraHosts = await getExtraSupportedHosts(settings);
+      settings.supportedHosts = SUPPORTED_SITE_HOSTS.concat(extraHosts);
+      sendResponse({ ok: true, settings });
       return;
     }
 

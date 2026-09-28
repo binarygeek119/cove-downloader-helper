@@ -40,7 +40,7 @@ Send the current page or a link to Cove so registered downloaders (yt-dlp, Commo
 Features:
 • Left-click the toolbar icon to send the current page
 • Right-click a link or page → Send to Cove
-• Optional downloader button on every page, plus a link chip (Settings → Show on all pages)
+• Optional bottom-right download bubble on every page, or only on supported sites (Settings)
 • Match results with quality picker and Video / Audio / Text override
 • Live job queue for downloads you start from the helper
 • Works with your Cove URL and optional personal access token

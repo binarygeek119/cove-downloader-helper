@@ -8,8 +8,12 @@
   let fab = null;
   let chip = null;
   let toastEl = null;
+  const DIRECT_MEDIA_EXT = /\.(mp4|webm|mkv|mov|m4v|mp3|m4a|flac|wav|ogg|opus|jpg|jpeg|png|gif|webp)$/i;
+
   let settings = {
-    showInPageButtons: true,
+    showInPageButtons: false,
+    showOnSupportedSites: false,
+    supportedHosts: [],
     coveUrl: '',
   };
   let hoverLink = null;
@@ -149,8 +153,23 @@
     }
   }
 
+  function hostMatchesSite(hostname, site) {
+    const host = String(hostname || '').replace(/^www\./i, '').toLowerCase();
+    const normalized = String(site || '').replace(/^www\./i, '').toLowerCase();
+    if (!host || !normalized || normalized === '*') return false;
+    return host === normalized || host.endsWith('.' + normalized);
+  }
+
+  function isSupportedPage() {
+    if (DIRECT_MEDIA_EXT.test(location.pathname)) return true;
+    const sites = settings.supportedHosts || [];
+    return sites.some((site) => hostMatchesSite(location.hostname, site));
+  }
+
   function shouldShow() {
-    if (!settings.showInPageButtons) return false;
+    const wantsAll = !!settings.showInPageButtons;
+    const wantsSupported = !!settings.showOnSupportedSites;
+    if (!wantsAll && !wantsSupported) return false;
     try {
       if (settings.coveUrl) {
         const coveOrigin = new URL(settings.coveUrl).origin;
@@ -160,7 +179,8 @@
       /* ignore bad cove url */
     }
     if (location.protocol !== 'http:' && location.protocol !== 'https:') return false;
-    return true;
+    if (wantsAll) return true;
+    return isSupportedPage();
   }
 
   function applyVisibility() {
@@ -220,7 +240,7 @@
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'sync') return;
-    if (changes.showInPageButtons || changes.coveUrl) {
+    if (changes.showInPageButtons || changes.showOnSupportedSites || changes.coveUrl) {
       loadSettings();
     }
   });
@@ -230,9 +250,9 @@
 
   // Keep floating button meaningful on SPA navigations.
   const notifyUrlChange = () => {
-    /* visibility depends on origin, not path; toast/chip cleared */
     chip.style.display = 'none';
     hoverLink = null;
+    applyVisibility();
   };
   window.addEventListener('popstate', notifyUrlChange);
   const wrapHistory = (method) => {
@@ -251,5 +271,6 @@
   }
 
   ensureUi();
+  fab.style.display = 'none';
   loadSettings();
 })();
