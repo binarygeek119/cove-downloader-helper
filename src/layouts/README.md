@@ -57,7 +57,7 @@ Every button uses the extension’s download icon. Pick the rest so it sits in t
 - `insert`: `beforebegin`, `afterbegin`, `beforeend`, or `afterend`
 - `selector`: one plain CSS selector. Empty selectors, HTML, and style blocks are rejected.
 
-`id` is a short unique name inside the file (`video`, `album`, `gifs` in the sample).
+`id` is a short unique name inside the file (`video`, `album`, `photo`, `gifs` in the sample).
 
 ## Check
 

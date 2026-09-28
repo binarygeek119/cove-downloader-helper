@@ -58,6 +58,25 @@
           "hoverBackground": "#ffa31a"
         }
       }
+    },
+    {
+      "id": "photo",
+      "kind": "image",
+      "path": "/photo",
+      "anchor": { "selector": "#ratingSpace > li.omega", "insert": "afterend" },
+      "button": {
+        "size": "small",
+        "showText": false,
+        "label": "Download",
+        "shape": "rounded",
+        "colors": {
+          "background": "#ff9000",
+          "text": "#ffffff",
+          "icon": "#ffffff",
+          "border": "#ff9000",
+          "hoverBackground": "#ffa31a"
+        }
+      }
     }
   ]
 }

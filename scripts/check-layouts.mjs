@@ -56,6 +56,11 @@ function runSelfTests() {
   const albums = matchLayoutTargets([sample], 'https://pornhub.com/albums');
   assert(albums.length === 1 && albums[0].id === 'album', 'albums prefix');
 
+  const photo = matchLayoutTargets([sample], 'https://www.pornhub.com/photo/868704295');
+  assert(photo.length === 1 && photo[0].id === 'photo' && photo[0].entity === 'Image', 'photo path');
+  assert(photo[0].button.size === 'small' && photo[0].button.showText === false, 'photo icon');
+  assert(photo[0].anchor.selector === '#ratingSpace > li.omega' && photo[0].anchor.insert === 'afterend', 'photo bar');
+
   const gifs = matchLayoutTargets([sample], 'https://www.pornhub.com/gifs');
   assert(gifs.length === 1 && gifs[0].kind === 'gif' && gifs[0].entity === 'Image', 'gifs path');
 

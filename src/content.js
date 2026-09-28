@@ -308,6 +308,15 @@
     document.querySelectorAll('[data-cove-layout-id]').forEach((node) => node.remove());
   }
 
+  function alignHostWithFloatedItem(host) {
+    const parent = host.parentElement;
+    const sibling = host.previousElementSibling || host.nextElementSibling;
+    if (!parent || parent.tagName !== 'UL' || !sibling || sibling.tagName !== 'LI') return;
+    const floated = getComputedStyle(sibling).float;
+    if (floated !== 'left' && floated !== 'right') return;
+    host.style.float = floated;
+  }
+
   function layoutHostPlaced(host, anchor, insert) {
     if (!host || !host.isConnected || !anchor || !anchor.isConnected) return false;
     if (insert === 'beforeend' || insert === 'afterbegin') return host.parentElement === anchor;
@@ -404,6 +413,7 @@
       if (!host) return;
       try {
         anchor.insertAdjacentElement(insert, host);
+        alignHostWithFloatedItem(host);
       } catch (_) {
         host.remove();
       }
