@@ -1,4 +1,7 @@
 (() => {
+  if (globalThis.__coveDownloaderHelperInjected) return;
+  globalThis.__coveDownloaderHelperInjected = true;
+
   const HOST_ID = 'cove-downloader-helper-root';
   let root = null;
   let shadow = null;

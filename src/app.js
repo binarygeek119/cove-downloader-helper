@@ -121,7 +121,7 @@
       if (!granted) {
         els.settingsSaved.hidden = false;
         els.settingsSaved.textContent =
-          'Settings saved locally, but site access was denied. Grant permission to talk to Cove and use in-page buttons.';
+          'Settings saved locally, but site access was denied. Grant permission to talk to Cove and show the downloader button on every page.';
         els.settingsSaved.className = 'status error';
         await storageSet(next);
         settings = await getSettings();

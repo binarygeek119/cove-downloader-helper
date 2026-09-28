@@ -40,7 +40,7 @@ Send the current page or a link to Cove so registered downloaders (yt-dlp, Commo
 Features:
 • Left-click the toolbar icon to send the current page
 • Right-click a link or page → Send to Cove
-• Optional in-page button and link chip (Settings)
+• Optional downloader button on every page, plus a link chip (Settings → Show on all pages)
 • Match results with quality picker and Video / Audio / Text override
 • Live job queue for downloads you start from the helper
 • Works with your Cove URL and optional personal access token
@@ -83,8 +83,8 @@ https://github.com/binarygeek119/cove-downloader-helper/blob/master/PRIVACY.md
 | `tabs` | Read the active tab URL when the user clicks the toolbar icon or uses page context actions; open the helper UI tab. |
 | `activeTab` | Temporary access to the tab the user invokes the extension on. |
 | `contextMenus` | “Send link/page to Cove” items in the right-click menu. |
-| `scripting` | Register optional in-page buttons only when the user enables them and grants site access. |
-| Host access `http://*/*`, `https://*/*` (optional) | Call the user-configured Cove origin (any host/port they choose, including LAN/localhost) and optionally inject in-page controls on sites where the user wants one-click send. Requested at runtime, not granted until the user approves. |
+| `scripting` | Inject the optional downloader button on every page only when the user enables Show on all pages and grants site access. |
+| Host access `http://*/*`, `https://*/*` (optional) | Call the user-configured Cove origin (any host/port they choose, including LAN/localhost) and, when Show on all pages is enabled, inject the downloader button on every site. Requested at runtime, not granted until the user approves. |
 
 ### Data disclosure
 

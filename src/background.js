@@ -51,6 +51,29 @@ function requestBroadHostPermission() {
   });
 }
 
+async function injectDownloaderButtonIntoOpenTabs() {
+  let tabs = [];
+  try {
+    tabs = await chrome.tabs.query({ url: HOST_ORIGINS });
+  } catch (_) {
+    return;
+  }
+
+  await Promise.all(
+    tabs.map(async (tab) => {
+      if (!tab.id || tab.discarded) return;
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id, allFrames: false },
+          files: ['content.js'],
+        });
+      } catch (_) {
+        // Restricted, prerendered, or closed tabs cannot take the button.
+      }
+    })
+  );
+}
+
 async function syncInPageContentScript() {
   const settings = await getSettings();
   const allowed = await hasBroadHostPermission();
@@ -73,6 +96,12 @@ async function syncInPageContentScript() {
     ]);
   } else if (!want && registered) {
     await chrome.scripting.unregisterContentScripts({ ids: [CONTENT_SCRIPT_ID] });
+  }
+
+  // Registered scripts only run on later navigations. Inject now so every
+  // open http(s) page gets the downloader button immediately.
+  if (want) {
+    await injectDownloaderButtonIntoOpenTabs();
   }
 }
 

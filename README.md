@@ -14,10 +14,10 @@ Repository: https://github.com/binarygeek119/cove-downloader-helper
 
 - **Left-click** the toolbar icon to download the **current page**
 - **Right-click** a link or page → Send to Cove
-- Optional **in-page** floating button and link chip (toggle in Settings)
+- Optional downloader button on every page, plus a link chip (toggle **Show on all pages** in Settings)
 - Cove **match** API with quality picker and **Video / Audio / Text** type override
 - **Job Queue** tab for live Cove jobs (progress, cancel, history)
-- Settings in-app: Cove URL, optional PAT, preferred mode, auto-send, queue-all, in-page buttons
+- Settings in-app: Cove URL, optional PAT, preferred mode, auto-send, queue-all, downloader button on every page
 
 ## Requirements
 
@@ -53,7 +53,7 @@ Install the community downloaders from the [official extension registry](https:/
 - Left-click the icon on a page to open the Download tab for that URL.
 - Right-click a link or the page background to send that URL.
 - If the matcher picks the wrong type, use **Type override** (Video / Audio / Text) before sending.
-- Toggle **Show in-page buttons** in Settings.
+- Toggle **Show on all pages** in Settings to show the downloader button on every page.
 - Use **Job Queue** to watch and cancel active Cove jobs.
 
 ## Build / CI
