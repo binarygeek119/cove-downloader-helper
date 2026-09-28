@@ -56,6 +56,10 @@
     btnOpenCove: document.getElementById('btn-open-cove'),
     settingsForm: document.getElementById('settings-form'),
     settingsSaved: document.getElementById('settings-saved'),
+    btnImportSettings: document.getElementById('btn-import-settings'),
+    btnExportSettings: document.getElementById('btn-export-settings'),
+    settingsImportFile: document.getElementById('settings-import-file'),
+    settingsTransferStatus: document.getElementById('settings-transfer-status'),
     btnTestCove: document.getElementById('btn-test-cove'),
     coveTestStatus: document.getElementById('cove-test-status'),
     coveUrl: document.getElementById('coveUrl'),
@@ -488,6 +492,88 @@
     }, 2500);
   }
 
+  function pluginVersion() {
+    return chrome.runtime.getManifest().version;
+  }
+
+  function storageSetChecked(values) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.sync.set(values, () => {
+        const err = chrome.runtime.lastError;
+        if (err) reject(new Error(err.message));
+        else resolve();
+      });
+    });
+  }
+
+  function downloadSettingsFile(filename, contents) {
+    const blob = new Blob([contents], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  async function exportSettings() {
+    const saved = await getSettings();
+    const version = pluginVersion();
+    const payload = buildSettingsExport(version, saved);
+    downloadSettingsFile(settingsExportFileName(version), JSON.stringify(payload, null, 2) + '\n');
+    showStatus(els.settingsTransferStatus, `Exported settings for version ${version}.`, 'ok');
+  }
+
+  async function importSettingsFile(file) {
+    if (!file) return;
+    if (file.size > SETTINGS_EXPORT_MAX_BYTES) {
+      showStatus(els.settingsTransferStatus, 'Settings file is too large.', 'error');
+      return;
+    }
+    let text;
+    try {
+      text = await file.text();
+    } catch (_) {
+      showStatus(els.settingsTransferStatus, 'Could not read the settings file.', 'error');
+      return;
+    }
+    const parsed = parseSettingsExport(text, pluginVersion());
+    if (!parsed.ok) {
+      showStatus(els.settingsTransferStatus, parsed.error, 'error');
+      return;
+    }
+    const next = parsed.settings;
+    try {
+      if (
+        next.coveUrl ||
+        next.showInPageButtons ||
+        next.showOnSupportedSites ||
+        next.showStylizedDownloadButton
+      ) {
+        const granted = await requestHostPermission();
+        if (!granted) {
+          await storageSetChecked(next);
+          settings = await getSettings();
+          fillSettingsForm(settings);
+          showStatus(
+            els.settingsTransferStatus,
+            'Settings imported locally, but site access was denied. Grant permission to talk to Cove and show download buttons.',
+            'error'
+          );
+          return;
+        }
+      }
+      await storageSetChecked(next);
+      settings = await getSettings();
+      fillSettingsForm(settings);
+      showStatus(els.settingsTransferStatus, `Imported settings for version ${pluginVersion()}.`, 'ok');
+    } catch (error) {
+      showStatus(els.settingsTransferStatus, error.message || 'Could not save imported settings.', 'error');
+    }
+  }
+
   function renderMatches(matches) {
     els.matchList.innerHTML = '';
     const override = layoutEntityLock || els.entityOverride.value;
@@ -897,6 +983,26 @@
   }
 
   els.settingsForm.addEventListener('submit', saveSettings);
+  if (els.btnImportSettings && els.settingsImportFile) {
+    els.btnImportSettings.addEventListener('click', () => {
+      els.settingsImportFile.value = '';
+      els.settingsImportFile.click();
+    });
+    els.settingsImportFile.addEventListener('change', () => {
+      const file = els.settingsImportFile.files && els.settingsImportFile.files[0];
+      els.settingsImportFile.value = '';
+      importSettingsFile(file).catch((error) => {
+        showStatus(els.settingsTransferStatus, error.message || String(error), 'error');
+      });
+    });
+  }
+  if (els.btnExportSettings) {
+    els.btnExportSettings.addEventListener('click', () => {
+      exportSettings().catch((error) => {
+        showStatus(els.settingsTransferStatus, error.message || String(error), 'error');
+      });
+    });
+  }
   els.btnTestCove.addEventListener('click', () => {
     testCoveConnection().catch((error) => {
       showStatus(els.coveTestStatus, error.message || String(error), 'error');

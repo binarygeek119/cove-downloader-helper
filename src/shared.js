@@ -505,6 +505,105 @@ function isHttpUrl(url) {
   }
 }
 
+const SETTINGS_EXPORT_MAX_BYTES = 100 * 1024;
+const SETTINGS_VALUE_MAX_CHARS = 8000;
+const SETTINGS_MODES = ['Video', 'Audio', 'Text'];
+
+function settingsExportFileName(version) {
+  const safe = String(version || '').replace(/[^0-9A-Za-z._-]/g, '');
+  return `cove-downloader-helper-settings-${safe || 'unknown'}.json`;
+}
+
+function buildSettingsExport(version, settings) {
+  const exported = {};
+  Object.keys(DEFAULT_SETTINGS).forEach((key) => {
+    exported[key] = settings && Object.prototype.hasOwnProperty.call(settings, key)
+      ? settings[key]
+      : DEFAULT_SETTINGS[key];
+  });
+  return {
+    version: String(version || ''),
+    settings: exported,
+  };
+}
+
+function settingsExportError(error) {
+  return { ok: false, error };
+}
+
+function parseSettingsExport(text, expectedVersion) {
+  if (typeof text !== 'string' || !text.trim()) {
+    return settingsExportError('Settings file is empty.');
+  }
+  if (text.length > SETTINGS_EXPORT_MAX_BYTES) {
+    return settingsExportError('Settings file is too large.');
+  }
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (_) {
+    return settingsExportError('Settings file is not valid JSON.');
+  }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return settingsExportError('Settings file is not recognized.');
+  }
+  if (typeof data.version !== 'string' || !data.version) {
+    return settingsExportError('Settings file is missing a plugin version.');
+  }
+  const version = String(expectedVersion || '');
+  if (data.version !== version) {
+    return settingsExportError(
+      `Settings file is for version ${data.version}. This plugin is version ${version}.`
+    );
+  }
+  const source = data.settings;
+  if (!source || typeof source !== 'object' || Array.isArray(source)) {
+    return settingsExportError('Settings file is missing settings.');
+  }
+  const keys = Object.keys(DEFAULT_SETTINGS);
+  const sourceKeys = Object.keys(source);
+  if (
+    sourceKeys.length !== keys.length ||
+    keys.some((key) => !Object.prototype.hasOwnProperty.call(source, key))
+  ) {
+    return settingsExportError('Settings file does not match this plugin version.');
+  }
+
+  const next = {};
+  for (let i = 0; i < keys.length; i += 1) {
+    const key = keys[i];
+    const value = source[key];
+    if (typeof DEFAULT_SETTINGS[key] === 'boolean') {
+      if (typeof value !== 'boolean') {
+        return settingsExportError('Settings file has an invalid value.');
+      }
+      next[key] = value;
+    } else if (key === 'preferredMode') {
+      if (SETTINGS_MODES.indexOf(value) === -1) {
+        return settingsExportError('Settings file has an invalid preferred mode.');
+      }
+      next[key] = value;
+    } else if (key === 'coveUrl') {
+      if (typeof value !== 'string' || value.length > SETTINGS_VALUE_MAX_CHARS) {
+        return settingsExportError('Settings file has an invalid Cove URL.');
+      }
+      const url = normalizeCoveUrl(value);
+      if (url && !isHttpUrl(url)) {
+        return settingsExportError('Cove URL must start with http:// or https://.');
+      }
+      next.coveUrl = url;
+    } else if (key === 'apiToken') {
+      if (typeof value !== 'string' || value.length > SETTINGS_VALUE_MAX_CHARS) {
+        return settingsExportError('Settings file has an invalid API token.');
+      }
+      next.apiToken = value.trim();
+    } else {
+      return settingsExportError('Settings file does not match this plugin version.');
+    }
+  }
+  return { ok: true, settings: next };
+}
+
 function sameOriginAsCove(pageUrl, coveUrl) {
   try {
     if (!coveUrl) return false;
