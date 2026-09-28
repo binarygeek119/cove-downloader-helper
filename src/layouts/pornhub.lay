@@ -6,7 +6,7 @@
       "id": "video",
       "kind": "video",
       "path": "/view_video.php",
-      "anchor": { "selector": ".video-wrapper .video-actions-tabs", "insert": "beforeend" },
+      "anchor": { "selector": ".userActions .js_videoSubscribeButton", "insert": "afterend" },
       "button": {
         "size": "medium",
         "showText": true,
@@ -45,6 +45,44 @@
       "kind": "gif",
       "path": "/gifs",
       "anchor": { "selector": ".gifVideoBlock", "insert": "beforeend" },
+      "button": {
+        "size": "small",
+        "showText": false,
+        "label": "Download",
+        "shape": "rounded",
+        "colors": {
+          "background": "#ff9000",
+          "text": "#ffffff",
+          "icon": "#ffffff",
+          "border": "#ff9000",
+          "hoverBackground": "#ffa31a"
+        }
+      }
+    },
+    {
+      "id": "photo",
+      "kind": "image",
+      "path": "/photo",
+      "anchor": { "selector": "#ratingSpace > li.omega", "insert": "afterend" },
+      "button": {
+        "size": "small",
+        "showText": false,
+        "label": "Download",
+        "shape": "rounded",
+        "colors": {
+          "background": "#ff9000",
+          "text": "#ffffff",
+          "icon": "#ffffff",
+          "border": "#ff9000",
+          "hoverBackground": "#ffa31a"
+        }
+      }
+    },
+    {
+      "id": "gif",
+      "kind": "gif",
+      "path": "/gif",
+      "anchor": { "selector": "ul.votingWrap > li:has(#favoriteGifButton)", "insert": "afterend" },
       "button": {
         "size": "small",
         "showText": false,

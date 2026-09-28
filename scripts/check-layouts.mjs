@@ -56,12 +56,26 @@ function runSelfTests() {
   const albums = matchLayoutTargets([sample], 'https://pornhub.com/albums');
   assert(albums.length === 1 && albums[0].id === 'album', 'albums prefix');
 
+  const photo = matchLayoutTargets([sample], 'https://www.pornhub.com/photo/868704295');
+  assert(photo.length === 1 && photo[0].id === 'photo' && photo[0].entity === 'Image', 'photo path');
+  assert(photo[0].button.size === 'small' && photo[0].button.showText === false, 'photo icon');
+  assert(photo[0].anchor.selector === '#ratingSpace > li.omega' && photo[0].anchor.insert === 'afterend', 'photo bar');
+
   const gifs = matchLayoutTargets([sample], 'https://www.pornhub.com/gifs');
-  assert(gifs.length === 1 && gifs[0].kind === 'gif' && gifs[0].entity === 'Image', 'gifs path');
+  assert(gifs.length === 1 && gifs[0].id === 'gifs' && gifs[0].entity === 'Image', 'gifs listing keeps the longer path');
+
+  const gifPage = matchLayoutTargets([sample], 'https://www.pornhub.com/gif/55153161');
+  assert(gifPage.length === 1 && gifPage[0].id === 'gif' && gifPage[0].entity === 'Image', 'gif page');
+  assert(gifPage[0].button.size === 'small' && gifPage[0].button.showText === false, 'gif icon');
+  assert(
+    gifPage[0].anchor.selector === 'ul.votingWrap > li:has(#favoriteGifButton)' &&
+      gifPage[0].anchor.insert === 'afterend',
+    'gif bar'
+  );
 
   const gifLater = matchLayoutTargets([sample], 'https://www.pornhub.com/user/gifs');
   assert(gifLater.length === 0, 'path must be a prefix, not a later segment');
-  const gifShort = matchLayoutTargets([sample], 'https://www.pornhub.com/gif');
+  const gifShort = matchLayoutTargets([sample], 'https://www.pornhub.com/gi');
   assert(gifShort.length === 0, 'shorter path does not match');
 
   const otherHost = matchLayoutTargets([sample], 'https://example.com/view_video.php?viewkey=1');
