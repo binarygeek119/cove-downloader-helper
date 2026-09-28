@@ -97,6 +97,10 @@
         showToast('Open Settings to configure Cove URL', true);
         return;
       }
+      if (response.started) {
+        showToast('Sent to Cove as video.');
+        return;
+      }
       showToast('Opening Cove Downloader Helper…');
     });
   }
