@@ -107,8 +107,12 @@
             <span class="switch-ui" aria-hidden="true"></span>
             Auto-apply metadata
           </label>
-          <button type="submit" class="primary">Save settings</button>
+          <div class="row">
+            <button type="submit" class="primary">Save settings</button>
+            <button type="button" id="btn-test-cove" class="secondary">Test connection</button>
+          </div>
           <p id="settings-saved" class="ok" hidden>Settings saved.</p>
+          <p id="cove-test-status" class="status" hidden></p>
         </form>
         <div class="notes">
           <p>
