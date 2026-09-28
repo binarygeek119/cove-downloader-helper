@@ -66,28 +66,23 @@ cp -f "$ZIP_PATH" "$ALIAS"
 
 rm -rf "$STAGE"
 
-# Optional CRX when a PEM is provided (local path or CI secret written to file).
+# CRX3 uses the same zip. Reuse a PEM so updates keep one extension ID.
 CRX_PATH="$OUT_DIR/${NAME}-${VERSION}.crx"
-if [[ -n "${EXTENSION_PEM_PATH:-}" && -f "${EXTENSION_PEM_PATH}" ]]; then
-  if command -v google-chrome >/dev/null 2>&1 || command -v chromium-browser >/dev/null 2>&1 || command -v chromium >/dev/null 2>&1; then
-    CHROME_BIN="$(command -v google-chrome || command -v chromium-browser || command -v chromium)"
-    PACK_DIR="$OUT_DIR/.crx-src"
-    rm -rf "$PACK_DIR"
-    mkdir -p "$PACK_DIR"
-    unzip -q "$ZIP_PATH" -d "$PACK_DIR"
-    "$CHROME_BIN" --pack-extension="$PACK_DIR" --pack-extension-key="$EXTENSION_PEM_PATH" >/dev/null 2>&1 || true
-    if [[ -f "$OUT_DIR/.crx-src.crx" ]]; then
-      mv -f "$OUT_DIR/.crx-src.crx" "$CRX_PATH"
-    elif [[ -f "${PACK_DIR}.crx" ]]; then
-      mv -f "${PACK_DIR}.crx" "$CRX_PATH"
-    fi
-    rm -rf "$PACK_DIR"
+KEY_PATH="${EXTENSION_PEM_PATH:-$OUT_DIR/${NAME}.pem}"
+if [[ ! -f "$KEY_PATH" ]]; then
+  if [[ -n "${EXTENSION_PEM_PATH:-}" ]]; then
+    echo "extension key not found: $KEY_PATH" >&2
+    exit 1
   fi
+  umask 077
+  openssl genrsa -out "$KEY_PATH" 2048
+  echo "Created extension key $KEY_PATH"
+  echo "Keep this PEM. Packing with a new key changes the extension ID."
 fi
+CRX_ID="$(node "$ROOT/scripts/pack-crx.mjs" "$ZIP_PATH" "$KEY_PATH" "$CRX_PATH")"
 
 echo "Packed Chrome extension: $ZIP_PATH"
 ls -la "$ZIP_PATH" "$ALIAS"
-if [[ -f "$CRX_PATH" ]]; then
-  echo "Packed CRX: $CRX_PATH"
-  ls -la "$CRX_PATH"
-fi
+echo "Packed CRX: $CRX_PATH"
+echo "Extension ID: $CRX_ID"
+ls -la "$CRX_PATH"

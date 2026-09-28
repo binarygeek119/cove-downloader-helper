@@ -2,3 +2,5 @@
 .vscode/
 metube-browser-extension.pem
 builds/*.zip
+builds/*.crx
+builds/*.pem
