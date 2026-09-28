@@ -67,7 +67,7 @@ Turn on **Show stylized download button**. These pages get a button. An image cl
 
 ## YouPorn stylized button
 
-Turn on **Show stylized download button**. A watch page gets an icon-only button in the action row, in the space after Flag. The icon uses the same gray as Favorite, Add to collection, Share, and Flag.
+Turn on **Show stylized download button**. A watch page gets an icon-only button in the action row, in the space after Flag. The button has no backing color. The icon uses the same gray as Favorite, Add to collection, Share, and Flag.
 
 | Page | Path | Button | Sends |
 | --- | --- | --- | --- |
