@@ -1,25 +1,44 @@
 :root {
   color-scheme: light dark;
+  --accent: #3d8bfd;
+  --accent-text: #fff;
+  --warn: #f0c14b;
   --bg: #0f1419;
   --panel: #171d25;
   --text: #e7ecf1;
   --muted: #9aa7b5;
-  --accent: #3d8bfd;
-  --accent-text: #fff;
   --border: #2a3441;
   --ok: #3dd68c;
   --err: #ff6b6b;
-  --warn: #f0c14b;
+  --switch-track: #3a4656;
   font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0f1419;
+    --panel: #171d25;
+    --text: #e7ecf1;
+    --muted: #9aa7b5;
+    --border: #2a3441;
+    --ok: #3dd68c;
+    --err: #ff6b6b;
+    --switch-track: #3a4656;
+  }
 }
 
 @media (prefers-color-scheme: light) {
   :root {
+    color-scheme: light;
     --bg: #f4f6f8;
     --panel: #ffffff;
     --text: #1a2330;
     --muted: #5b6b7c;
     --border: #d5dde6;
+    --ok: #0d8a4d;
+    --err: #c62828;
+    --switch-track: #9aa8b6;
   }
 }
 
@@ -126,7 +145,7 @@ label.switch input {
   width: 36px;
   height: 20px;
   border-radius: 999px;
-  background: var(--border);
+  background: var(--switch-track);
   transition: background 0.15s ease;
 }
 

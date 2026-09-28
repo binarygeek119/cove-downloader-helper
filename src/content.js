@@ -69,6 +69,7 @@
     shadow.innerHTML = `
       <style>
         :host, * { box-sizing: border-box; font-family: "Segoe UI", system-ui, sans-serif; }
+        :host { color-scheme: light dark; }
         #fab {
           position: fixed;
           right: 16px;
@@ -78,8 +79,12 @@
           height: 44px;
           padding: 0;
           border-radius: 999px;
-          border: none;
-          background: #171d25 url("${iconUrl}") center / 28px 28px no-repeat;
+          border: 1px solid #2a3441;
+          background-color: #171d25;
+          background-image: url("${iconUrl}");
+          background-position: center;
+          background-size: 28px 28px;
+          background-repeat: no-repeat;
           box-shadow: 0 8px 24px rgba(0,0,0,.28);
           cursor: pointer;
         }
@@ -115,6 +120,15 @@
           box-shadow: 0 8px 24px rgba(0,0,0,.28);
         }
         #toast[data-error="1"] { border-color: #ff6b6b; color: #ffb4b4; }
+        @media (prefers-color-scheme: light) {
+          #fab, #chip, #toast {
+            background-color: #ffffff;
+            color: #1a2330;
+            border-color: #d5dde6;
+            box-shadow: 0 8px 24px rgba(20, 32, 48, .16);
+          }
+          #toast[data-error="1"] { border-color: #c62828; color: #a32020; }
+        }
       </style>
       <button id="fab" type="button" title="Send page to Cove" aria-label="Send page to Cove"></button>
       <button id="chip" type="button" title="Send link to Cove">Cove</button>
