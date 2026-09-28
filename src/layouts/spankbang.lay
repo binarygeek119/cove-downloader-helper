@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "hosts": ["spankbang.com"],
+  "targets": [
+    {
+      "id": "watch",
+      "kind": "video",
+      "path": "/",
+      "anchor": { "selector": "#video-subscription", "insert": "beforebegin" },
+      "button": {
+        "size": "large",
+        "showText": true,
+        "label": "Download",
+        "shape": "rounded",
+        "colors": {
+          "background": "#fdb82e",
+          "text": "#440b05",
+          "icon": "#440b05",
+          "border": "#fdb82e",
+          "hoverBackground": "#ffe14a"
+        }
+      }
+    }
+  ]
+}
