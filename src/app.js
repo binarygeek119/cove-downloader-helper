@@ -589,7 +589,7 @@
     showStatus(els.downloadStatus, '');
 
     if (!url) {
-      showStatus(els.downloadStatus, 'No pending URL. Left-click the toolbar icon on a page, or use the context menu.', 'error');
+      showStatus(els.downloadStatus, 'No pending URL. Right-click the page and choose Send page to Cove.', 'error');
       return;
     }
 
@@ -995,7 +995,7 @@
           await sendSelected();
         }
       } else {
-        els.downloadUrl.textContent = 'No pending URL. Left-click the toolbar icon on a page.';
+        els.downloadUrl.textContent = 'No pending URL. Right-click the page and choose Send page to Cove.';
       }
     }
   }

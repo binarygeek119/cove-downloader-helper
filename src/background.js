@@ -392,23 +392,11 @@ async function beginSendToCove(url, tab, placement) {
 }
 
 chrome.action.onClicked.addListener((tab) => {
-  const url = tab && tab.url;
-  if (url && isHttpUrl(url) && autoSendDownloads) openJobQueueForDownload(tab && tab.windowId);
-  const run = async () => {
-    try {
-      if (!url || !isHttpUrl(url)) {
-        await openAppWindow('?tab=settings');
-        return;
-      }
-      await beginSendToCove(url, tab);
-    } catch (error) {
-      console.error('Cove left-click failed:', error);
-      const message = error && error.message ? error.message : String(error);
-      await openAppWindow('?tab=download&error=' + encodeURIComponent(message));
-    }
-  };
-  // Kick off without awaiting other work first so permission request stays gesture-bound.
-  void run();
+  // The pinned icon opens the job queue. Both calls stay in this click turn:
+  // the panel needs the gesture, and site access lets the video list keep working.
+  openJobQueue(tab && tab.windowId);
+  chrome.runtime.sendMessage({ type: 'show-job-queue' }).catch(() => {});
+  void requestBroadHostPermission();
 });
 
 chrome.contextMenus.onClicked.addListener((item, tab) => {
