@@ -20,6 +20,7 @@
         <button type="button" class="tab" data-tab="videos" role="tab" aria-selected="false" hidden>Videos</button>
         <button type="button" class="tab" data-tab="queue" role="tab" aria-selected="false">Job Queue</button>
         <button type="button" class="tab" data-tab="settings" role="tab" aria-selected="false">Settings</button>
+        <button type="button" class="tab" data-tab="about" role="tab" aria-selected="false">About</button>
       </nav>
     </header>
 
@@ -140,6 +141,13 @@
             <button type="submit" class="primary">Save settings</button>
             <button type="button" id="btn-test-cove" class="secondary">Test connection</button>
           </div>
+          <div class="row">
+            <button type="button" id="btn-import-settings" class="secondary">Import</button>
+            <button type="button" id="btn-export-settings" class="secondary">Export</button>
+          </div>
+          <input type="file" id="settings-import-file" accept="application/json,.json" hidden />
+          <p id="settings-transfer-status" class="status" hidden></p>
+          <p class="muted">Import and export a settings file for this plugin version. A file from another version is left unused.</p>
           <p id="settings-saved" class="ok" hidden>Settings saved.</p>
           <p id="cove-test-status" class="status" hidden></p>
         </form>
@@ -159,10 +167,26 @@
             Video placements download as video, image and gif placements as an image, and story placements as text when Cove has that downloader.
           </p>
         </div>
-        <p id="extension-version" class="plugin-version"></p>
-        <p class="plugin-version">
-          <a href="https://github.com/binarygeek119/cove-downloader-helper" target="_blank" rel="noreferrer">https://github.com/binarygeek119/cove-downloader-helper</a>
-        </p>
+      </section>
+
+      <section id="panel-about" class="panel" role="tabpanel" hidden>
+        <h2>About</h2>
+        <dl class="about-list">
+          <div>
+            <dt>Version</dt>
+            <dd id="extension-version"></dd>
+          </div>
+          <div>
+            <dt>Author</dt>
+            <dd>BinaryGeek119</dd>
+          </div>
+          <div>
+            <dt>Support</dt>
+            <dd>
+              <a href="https://github.com/binarygeek119/cove-downloader-helper" target="_blank" rel="noreferrer">https://github.com/binarygeek119/cove-downloader-helper</a>
+            </dd>
+          </div>
+        </dl>
       </section>
     </main>
 

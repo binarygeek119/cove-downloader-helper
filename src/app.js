@@ -29,6 +29,7 @@
       videos: document.getElementById('panel-videos'),
       queue: document.getElementById('panel-queue'),
       settings: document.getElementById('panel-settings'),
+      about: document.getElementById('panel-about'),
     },
     tabVideos: document.querySelector('.tab[data-tab="videos"]'),
     videosHeading: document.getElementById('videos-heading'),
@@ -56,6 +57,10 @@
     btnOpenCove: document.getElementById('btn-open-cove'),
     settingsForm: document.getElementById('settings-form'),
     settingsSaved: document.getElementById('settings-saved'),
+    btnImportSettings: document.getElementById('btn-import-settings'),
+    btnExportSettings: document.getElementById('btn-export-settings'),
+    settingsImportFile: document.getElementById('settings-import-file'),
+    settingsTransferStatus: document.getElementById('settings-transfer-status'),
     btnTestCove: document.getElementById('btn-test-cove'),
     coveTestStatus: document.getElementById('cove-test-status'),
     coveUrl: document.getElementById('coveUrl'),
@@ -395,6 +400,8 @@
     };
   }
 
+  const HOST_PERMISSION = { origins: ['http://*/*', 'https://*/*'] };
+
   function requestHostPermission() {
     return new Promise((resolve) => {
       chrome.runtime.sendMessage({ type: 'request-host-permission' }, (response) => {
@@ -403,6 +410,34 @@
           return;
         }
         resolve(!!(response && response.ok));
+      });
+    });
+  }
+
+  function containedHostPermission() {
+    return new Promise((resolve) => {
+      chrome.permissions.contains(HOST_PERMISSION, (has) => {
+        resolve(!chrome.runtime.lastError && !!has);
+      });
+    });
+  }
+
+  function importHostPermission() {
+    return new Promise((resolve) => {
+      const result = { has: false, granted: false, pending: 2 };
+      const finish = () => {
+        result.pending -= 1;
+        if (result.pending === 0) resolve(result.has || result.granted);
+      };
+      chrome.permissions.contains(HOST_PERMISSION, (has) => {
+        result.has = !chrome.runtime.lastError && !!has;
+        finish();
+      });
+      // Ask on the Import click, before the file dialog opens. contains still
+      // counts when access is already granted.
+      chrome.permissions.request(HOST_PERMISSION, (granted) => {
+        result.granted = !chrome.runtime.lastError && !!granted;
+        finish();
       });
     });
   }
@@ -486,6 +521,94 @@
     setTimeout(() => {
       els.settingsSaved.hidden = true;
     }, 2500);
+  }
+
+  function pluginVersion() {
+    return chrome.runtime.getManifest().version;
+  }
+
+  function storageSetChecked(values) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.sync.set(values, () => {
+        const err = chrome.runtime.lastError;
+        if (err) reject(new Error(err.message));
+        else resolve();
+      });
+    });
+  }
+
+  function downloadSettingsFile(filename, contents) {
+    const blob = new Blob([contents], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  async function exportSettings() {
+    const saved = await getSettings();
+    const version = pluginVersion();
+    const payload = buildSettingsExport(version, saved);
+    downloadSettingsFile(settingsExportFileName(version), JSON.stringify(payload, null, 2) + '\n');
+    showStatus(els.settingsTransferStatus, `Exported settings for version ${version}.`, 'ok');
+  }
+
+  function importedSettingsNeedHostAccess(next) {
+    return !!(
+      next.coveUrl ||
+      next.showInPageButtons ||
+      next.showOnSupportedSites ||
+      next.showStylizedDownloadButton
+    );
+  }
+
+  async function importSettingsFile(file, permissionPromise) {
+    if (!file) return;
+    if (file.size > SETTINGS_EXPORT_MAX_BYTES) {
+      showStatus(els.settingsTransferStatus, 'Settings file is too large.', 'error');
+      return;
+    }
+    let text;
+    try {
+      text = await file.text();
+    } catch (_) {
+      showStatus(els.settingsTransferStatus, 'Could not read the settings file.', 'error');
+      return;
+    }
+    const parsed = parseSettingsExport(text, pluginVersion());
+    if (!parsed.ok) {
+      showStatus(els.settingsTransferStatus, parsed.error, 'error');
+      return;
+    }
+    const next = parsed.settings;
+    try {
+      if (importedSettingsNeedHostAccess(next)) {
+        const granted = permissionPromise ? await permissionPromise : false;
+        if (granted) {
+          chrome.runtime.sendMessage({ type: 'sync-in-page-buttons' }).catch(() => {});
+        } else {
+          await storageSetChecked(next);
+          settings = await getSettings();
+          fillSettingsForm(settings);
+          showStatus(
+            els.settingsTransferStatus,
+            'Settings imported locally, but site access was denied. Grant permission to talk to Cove and show download buttons.',
+            'error'
+          );
+          return;
+        }
+      }
+      await storageSetChecked(next);
+      settings = await getSettings();
+      fillSettingsForm(settings);
+      showStatus(els.settingsTransferStatus, `Imported settings for version ${pluginVersion()}.`, 'ok');
+    } catch (error) {
+      showStatus(els.settingsTransferStatus, error.message || 'Could not save imported settings.', 'error');
+    }
   }
 
   function renderMatches(matches) {
@@ -898,6 +1021,29 @@
   }
 
   els.settingsForm.addEventListener('submit', saveSettings);
+  if (els.btnImportSettings && els.settingsImportFile) {
+    els.btnImportSettings.addEventListener('click', () => {
+      els.settingsImportFile.value = '';
+      els.settingsImportFile._covePermission = importHostPermission();
+      els.settingsImportFile.click();
+    });
+    els.settingsImportFile.addEventListener('change', () => {
+      const file = els.settingsImportFile.files && els.settingsImportFile.files[0];
+      const permissionPromise = els.settingsImportFile._covePermission || containedHostPermission();
+      els.settingsImportFile._covePermission = null;
+      els.settingsImportFile.value = '';
+      importSettingsFile(file, permissionPromise).catch((error) => {
+        showStatus(els.settingsTransferStatus, error.message || String(error), 'error');
+      });
+    });
+  }
+  if (els.btnExportSettings) {
+    els.btnExportSettings.addEventListener('click', () => {
+      exportSettings().catch((error) => {
+        showStatus(els.settingsTransferStatus, error.message || String(error), 'error');
+      });
+    });
+  }
   els.btnTestCove.addEventListener('click', () => {
     testCoveConnection().catch((error) => {
       showStatus(els.coveTestStatus, error.message || String(error), 'error');
@@ -1003,13 +1149,13 @@
 
   async function init() {
     const versionEl = document.getElementById('extension-version');
-    if (versionEl) versionEl.textContent = `Version ${chrome.runtime.getManifest().version}`;
+    if (versionEl) versionEl.textContent = chrome.runtime.getManifest().version;
 
     await loadSettings();
     await loadClearedHistory();
 
     const errorParam = params.get('error');
-    const requestedTab = ['download', 'videos', 'queue', 'settings'].includes(currentTab) ? currentTab : 'download';
+    const requestedTab = ['download', 'videos', 'queue', 'settings', 'about'].includes(currentTab) ? currentTab : 'download';
     const needsSetup = !normalizeCoveUrl(settings && settings.coveUrl);
     if (needsSetup) {
       if (errorParam) showStatus(els.coveTestStatus, errorParam, 'error');

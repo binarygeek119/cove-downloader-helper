@@ -9,6 +9,7 @@
       "anchor": { "selector": "#video-subscription", "insert": "beforebegin" },
       "button": {
         "size": "large",
+        "fit": true,
         "showText": true,
         "label": "Download",
         "shape": "rounded",

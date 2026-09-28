@@ -511,6 +511,13 @@
     );
   }
 
+  function rowStacks(host) {
+    const parent = host && host.parentElement;
+    if (!parent) return false;
+    const direction = getComputedStyle(parent).flexDirection;
+    return direction === 'column' || direction === 'column-reverse';
+  }
+
   function syncLayoutButton(host, target) {
     const buttonSpec = target && target.button;
     const button = host && host.shadowRoot && host.shadowRoot.querySelector('button');
@@ -532,12 +539,14 @@
     if (!customSize) return;
     let height = buttonSpec.height || preset.height;
     let width = buttonSpec.width || 0;
+    let stretch = false;
     if (buttonSpec.fit && !placed) {
       const sibling = sizeSibling(host);
       if (sibling) {
         const rect = sibling.getBoundingClientRect();
         if (rect.height >= 16) height = Math.round(rect.height);
-        if (!buttonSpec.showText && !buttonSpec.width && rect.width >= 16 && rect.width <= 160) {
+        stretch = rowStacks(host);
+        if (!buttonSpec.width && rect.width >= 16 && !stretch && !buttonSpec.showText && rect.width <= 160) {
           width = Math.round(rect.width);
         }
       }
@@ -555,7 +564,19 @@
       setInlineStyle(button, 'padding', `0 ${Math.round(preset.pad * scale)}px`);
       setInlineStyle(button, 'gap', `${Math.round(preset.gap * scale)}px`);
     }
-    if (width) setInlineStyle(button, 'width', `${Math.max(16, Math.min(480, Math.round(width * scale)))}px`);
+    if (stretch && !buttonSpec.width) {
+      setInlineStyle(host, 'align-self', 'stretch');
+      setInlineStyle(host, 'width', '100%');
+      setInlineStyle(button, 'width', '100%');
+    } else if (width) {
+      if (host.style.alignSelf === 'stretch') host.style.alignSelf = 'center';
+      host.style.removeProperty('width');
+      setInlineStyle(button, 'width', `${Math.max(16, Math.min(480, Math.round(width * scale)))}px`);
+    } else if (!buttonSpec.width) {
+      if (host.style.alignSelf === 'stretch') host.style.alignSelf = 'center';
+      host.style.removeProperty('width');
+      button.style.removeProperty('width');
+    }
     if (placed) {
       setInlineStyle(host, 'position', 'fixed');
       setInlineStyle(host, 'left', `${target.anchor.x}px`);

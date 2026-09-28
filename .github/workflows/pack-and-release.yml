@@ -44,6 +44,9 @@ jobs:
       - name: Check xHamster player streams
         run: node scripts/check-xhamster-media.mjs
 
+      - name: Check settings import and export
+        run: node scripts/check-settings-export.mjs
+
       - name: Pack extension
         run: |
           chmod +x ./scripts/pack-extension.sh ./build.sh

@@ -52,7 +52,7 @@ Every button uses the extension’s download icon. Pick the rest so it sits in t
 - `size`: `small`, `medium`, or `large`
 - `width` and `height`: optional pixel size. `width` is 16 to 480. `height` is 16 to 160. Omitted means the size preset.
 - `scale`: optional number from 0.5 to 2. It multiplies the button’s height, width, type, and icon. Omitted means 1.
-- `fit`: optional `true` or `false`. `true` matches the height of the other buttons in that row, including when the window resizes or the side panel opens. Omitted means `false`.
+- `fit`: optional `true` or `false`. `true` matches the height of the other buttons in that row, including when the window resizes or the side panel opens. If that row stacks into a column, the button also uses their width. Omitted means `false`.
 - `hover`: optional `true` or `false`. `true` uses `hoverBackground` while the pointer is on the button. `false` keeps the normal background. Omitted means `true`.
 - `light` and `dark`: optional color sets (`background`, `text`, `icon`, and optionally `border` and `hoverBackground`). The button uses `dark` when the site is in dark mode and `light` when it is in light mode. `colors` is the fallback.
 - `showText`: `true` or `false`

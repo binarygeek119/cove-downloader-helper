@@ -747,6 +747,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
 
+      if (message.type === 'sync-in-page-buttons') {
+        if (await hasBroadHostPermission()) await syncInPageContentScript();
+        sendResponse({ ok: true });
+        return;
+      }
+
       if (message.type === 'get-stylized-layout') {
         const settings = await getSettings();
         if (!settings.showStylizedDownloadButton) {
