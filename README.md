@@ -71,13 +71,10 @@ Creates a packed Chrome extension in `builds/`:
 
 - `cove-downloader-helper-{version}-chrome.zip` (preferred for the Chrome Web Store)
 - `cove-downloader-helper-{version}.zip` (alias)
-- `cove-downloader-helper-{version}.crx` (CRX3, same package as the zip)
 
-The first pack writes `builds/cove-downloader-helper.pem` and reuses it so later CRX files keep the same extension ID. That file is a private key. Set `EXTENSION_PEM_PATH` to pack with a different key, including the key for an existing store item.
+For a local install, unzip `cove-downloader-helper-{version}-chrome.zip` (or use `src/`) and choose **Load unpacked**.
 
-Dragging that CRX onto `chrome://extensions` shows `CRX_REQUIRED_PROOF_MISSING`. Chrome only installs a CRX signed by the Chrome Web Store, and that publisher signature cannot be added locally. For a local install, unzip `cove-downloader-helper-{version}-chrome.zip` (or use `src/`) and choose **Load unpacked**. The CRX is for an enterprise policy install, which does not require the store signature.
-
-On every push to `master`/`main`, GitHub Actions packs the extension and publishes/updates the GitHub Release `v{version}` with the zip and CRX. When the manifest `version` is newer than the Chrome Web Store item, the same workflow uploads that zip and submits it for review.
+On every push to `master`/`main`, GitHub Actions packs the extension and publishes/updates the GitHub Release `v{version}` with the zip. When the manifest `version` is newer than the Chrome Web Store item, the same workflow uploads that zip and submits it for review.
 
 The store item ID is `okmkahgbcigkpmaagpddnadpffjpibgm`. Add these repository secrets before the store update will run:
 

@@ -66,25 +66,5 @@ cp -f "$ZIP_PATH" "$ALIAS"
 
 rm -rf "$STAGE"
 
-# CRX3 uses the same zip. Reuse a PEM so updates keep one extension ID.
-CRX_PATH="$OUT_DIR/${NAME}-${VERSION}.crx"
-KEY_PATH="${EXTENSION_PEM_PATH:-$OUT_DIR/${NAME}.pem}"
-if [[ ! -f "$KEY_PATH" ]]; then
-  if [[ -n "${EXTENSION_PEM_PATH:-}" ]]; then
-    echo "extension key not found: $KEY_PATH" >&2
-    exit 1
-  fi
-  umask 077
-  openssl genrsa -out "$KEY_PATH" 2048
-  echo "Created extension key $KEY_PATH"
-  echo "Keep this PEM. Packing with a new key changes the extension ID."
-fi
-CRX_ID="$(node "$ROOT/scripts/pack-crx.mjs" "$ZIP_PATH" "$KEY_PATH" "$CRX_PATH")"
-
 echo "Packed Chrome extension: $ZIP_PATH"
 ls -la "$ZIP_PATH" "$ALIAS"
-echo "Packed CRX: $CRX_PATH"
-echo "Extension ID: $CRX_ID"
-echo "Chrome shows CRX_REQUIRED_PROOF_MISSING if this CRX is dragged onto chrome://extensions."
-echo "Unzip the chrome zip and use Load unpacked, or install the CRX with enterprise policy."
-ls -la "$CRX_PATH"

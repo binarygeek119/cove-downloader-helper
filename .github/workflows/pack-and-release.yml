@@ -31,24 +31,15 @@ jobs:
           echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
           echo "zip=cove-downloader-helper-${VERSION}-chrome.zip" >> "$GITHUB_OUTPUT"
           echo "zip_alias=cove-downloader-helper-${VERSION}.zip" >> "$GITHUB_OUTPUT"
-          echo "crx=cove-downloader-helper-${VERSION}.crx" >> "$GITHUB_OUTPUT"
 
       - name: Check layout files
         run: node scripts/check-layouts.mjs
 
       - name: Pack extension
-        env:
-          EXTENSION_PEM: ${{ secrets.EXTENSION_PEM }}
         run: |
           chmod +x ./scripts/pack-extension.sh ./build.sh
-          if [[ -n "${EXTENSION_PEM}" ]]; then
-            umask 077
-            printf '%s\n' "$EXTENSION_PEM" > "$RUNNER_TEMP/extension.pem"
-            export EXTENSION_PEM_PATH="$RUNNER_TEMP/extension.pem"
-          fi
           ./scripts/pack-extension.sh --force
           test -f "builds/${{ steps.meta.outputs.zip }}"
-          test -f "builds/${{ steps.meta.outputs.crx }}"
           # Ensure Chrome-loadable layout (manifest at archive root)
           unzip -l "builds/${{ steps.meta.outputs.zip }}" | grep -E '^\s+[0-9]+.+\smanifest\.json$'
 
@@ -59,7 +50,6 @@ jobs:
           path: |
             builds/${{ steps.meta.outputs.zip }}
             builds/${{ steps.meta.outputs.zip_alias }}
-            builds/${{ steps.meta.outputs.crx }}
           if-no-files-found: error
 
       - name: Publish to GitHub Releases
@@ -76,13 +66,10 @@ jobs:
             2. Enable Developer mode
             3. Choose **Load unpacked** and select the unzipped folder
 
-            `${{ steps.meta.outputs.crx }}` is the same package for an enterprise policy install. Dragging it onto `chrome://extensions` shows `CRX_REQUIRED_PROOF_MISSING` because Chrome requires the Web Store publisher signature.
-
             Version `${{ steps.meta.outputs.version }}` from `src/manifest.json` @ `${{ github.sha }}`.
           files: |
             builds/${{ steps.meta.outputs.zip }}
             builds/${{ steps.meta.outputs.zip_alias }}
-            builds/${{ steps.meta.outputs.crx }}
           generate_release_notes: true
           make_latest: true
           overwrite_files: true
