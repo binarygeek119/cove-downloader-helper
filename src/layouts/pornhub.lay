@@ -24,7 +24,7 @@
     {
       "id": "album",
       "kind": "image",
-      "path": "/album",
+      "path": "/photo",
       "anchor": { "selector": ".photoAlbum", "insert": "beforeend" },
       "button": {
         "size": "medium",
