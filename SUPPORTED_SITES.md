@@ -4,7 +4,7 @@
 
 These controls are not limited to this list:
 
-- The toolbar icon sends the current page.
+- The toolbar icon opens the job queue beside the page.
 - Right-click **Send to Cove** sends a link or the page.
 - **Show on all pages** shows the same bubble on every page.
 

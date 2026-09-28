@@ -52,7 +52,7 @@ Cove Downloader Helper connects your browser to your self-hosted Cove media libr
 Send the current page or a link to your Cove server so it can download the media into your library.
 
 Features:
-• Left-click the toolbar icon to send the current page
+• Click the toolbar icon to open the job queue beside the page
 • Right-click a link or page → Send to Cove
 • Optional bottom-right download bubble on every page, or only on supported sites (Settings)
 • Match results with quality picker and Video / Audio / Text override
@@ -95,7 +95,7 @@ https://github.com/binarygeek119/cove-downloader-helper/blob/master/PRIVACY.md
 | Permission | Justification |
 | --- | --- |
 | `storage` | Save Cove URL, optional API token, and user preferences. |
-| `tabs` | Read the active tab URL when the user clicks the toolbar icon or uses page context actions; open the helper UI tab. While the side panel is open, read the active tab so a page with more than one video can show the video picker. |
+| `tabs` | Read the active tab URL for page context actions and the helper UI tab. While the side panel is open, read the active tab so a page with more than one video can show the video picker. |
 | `activeTab` | Temporary access to the tab the user invokes the extension on. |
 | `contextMenus` | “Send link/page to Cove” items in the right-click menu. |
 | `scripting` | Inject the optional downloader button on every page only when the user enables Show on all pages and grants site access. While the side panel is open, read video entries on the active page so the user can pick which ones to send. |
