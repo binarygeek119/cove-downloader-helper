@@ -124,6 +124,11 @@ chrome.runtime.onStartup.addListener(() => {
 applyToolbarIcon();
 syncInPageContentScript().catch(() => {});
 
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (!changeInfo.url) return;
+  chrome.tabs.sendMessage(tabId, { type: 'cove-url-changed', url: changeInfo.url }).catch(() => {});
+});
+
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'sync') return;
   if (
@@ -350,7 +355,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ ok: true, targets: [] });
         return;
       }
-      const pageUrl = (sender.tab && sender.tab.url) || '';
+      const tabUrl = (sender.tab && sender.tab.url) || '';
+      let pageUrl = tabUrl;
+      if (message.url && tabUrl) {
+        try {
+          const requested = new URL(message.url);
+          const tab = new URL(tabUrl);
+          if (requested.origin === tab.origin) pageUrl = requested.href;
+        } catch (_) {
+          pageUrl = tabUrl;
+        }
+      }
       const targets = matchLayoutTargets(await loadSiteLayouts(), pageUrl);
       sendResponse({ ok: true, targets });
       return;

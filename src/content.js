@@ -447,7 +447,7 @@
       return;
     }
     ensureLayoutObserver();
-    chrome.runtime.sendMessage({ type: 'get-stylized-layout' }, (response) => {
+    chrome.runtime.sendMessage({ type: 'get-stylized-layout', url: location.href }, (response) => {
       if (requestId !== layoutRequest) return;
       if (!settings.showStylizedDownloadButton) {
         currentTargets = [];
@@ -503,6 +503,10 @@
     refreshLayoutButtons();
   };
   window.addEventListener('popstate', notifyUrlChange);
+  chrome.runtime.onMessage.addListener((message) => {
+    if (!message || message.type !== 'cove-url-changed' || message.url !== location.href) return;
+    notifyUrlChange();
+  });
   const wrapHistory = (method) => {
     const original = history[method];
     history[method] = function () {
