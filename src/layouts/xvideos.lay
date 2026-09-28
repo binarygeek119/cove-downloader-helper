@@ -14,11 +14,11 @@
         "shape": "square",
         "stack": true,
         "colors": {
-          "background": "transparent",
+          "background": "#ffffff",
           "text": "#000000",
           "icon": "#a8a8a8",
-          "border": "transparent",
-          "hoverBackground": "transparent"
+          "border": "#d9d9d9",
+          "hoverBackground": "#f2f2f2"
         }
       }
     }

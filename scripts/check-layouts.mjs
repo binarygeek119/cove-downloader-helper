@@ -189,7 +189,12 @@ function runSelfTests() {
       watch[0].anchor.replace === true,
     'xvideos replaces the download button'
   );
-  assert(watch[0].button.colors.background === 'transparent' && watch[0].button.colors.icon === '#a8a8a8', 'xvideos icon');
+  assert(
+    watch[0].button.colors.background === '#ffffff' &&
+      watch[0].button.colors.icon === '#a8a8a8' &&
+      watch[0].button.colors.text === '#000000',
+    'xvideos button colors'
+  );
   assert(watch[0].button.stack === true && watch[0].button.showText === true, 'xvideos stacks the icon and label');
   const listing = matchLayoutTargets([xvideos], 'https://www.xvideos.com/');
   assert(listing.length === 0, 'xvideos home is not a watch page');
