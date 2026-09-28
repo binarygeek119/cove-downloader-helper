@@ -8,7 +8,7 @@ These controls are not limited to this list:
 - Right-click **Send to Cove** sends a link or the page.
 - **Show on all pages** shows the same bubble on every page.
 
-**Show stylized download button** draws a site-styled button only where a layout file matches. Pornhub, YouPorn, and XVideos have layouts. See [src/layouts/README.md](src/layouts/README.md) to add another site.
+**Show stylized download button** draws a site-styled button only where a layout file matches. Pornhub, YouPorn, XVideos, and xHamster have layouts. See [src/layouts/README.md](src/layouts/README.md) to add another site.
 
 Cove can also add hosts from the downloaders installed on your instance. Those extra hosts are not listed here. Sending a URL still depends on the downloaders installed in Cove. This page is what the extension treats as a supported site.
 
@@ -42,7 +42,7 @@ Cove can also add hosts from the downloaders installed on your instance. Those e
 | Pornhub | `pornhub.com` | Yes | Yes | Video, photo, and gif pages. See below. |
 | XVideos | `xvideos.com` | Yes | Yes | Watch pages. The site download button is replaced. See below. |
 | XNXX | `xnxx.com` | Yes | No | |
-| xHamster | `xhamster.com` | Yes | No | |
+| xHamster | `xhamster.com` | Yes | Yes | Watch pages. See below. |
 | SpankBang | `spankbang.com` | Yes | No | |
 | Eporner | `eporner.com` | Yes | No | |
 | YouPorn | `youporn.com` | Yes | Yes | Watch pages. See below. |
@@ -72,6 +72,14 @@ Turn on **Show stylized download button**. A watch page whose path starts with `
 | Page | Path | Button | Sends |
 | --- | --- | --- | --- |
 | Watch | `/video.` | Replaces the site download button | Video |
+
+## xHamster stylized button
+
+Turn on **Show stylized download button**. A watch page whose path starts with `/videos/` gets a Download button in the action row, after the flag. The button uses the same dark fill and light icon as the other controls in that row. The flag stays.
+
+| Page | Path | Button | Sends |
+| --- | --- | --- | --- |
+| Watch | `/videos/` | Download after the flag | Video |
 
 ## YouPorn stylized button
 

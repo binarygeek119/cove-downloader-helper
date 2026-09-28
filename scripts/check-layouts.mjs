@@ -189,6 +189,36 @@ function runSelfTests() {
   assert(listing.length === 0, 'xvideos home is not a watch page');
   const liked = matchLayoutTargets([xvideos], 'https://www.xvideos.com/videos-i-like');
   assert(liked.length === 0, 'videos-i-like does not use the watch prefix');
+
+  const xhamster = JSON.parse(fs.readFileSync(path.join(layoutDir, 'xhamster.lay'), 'utf8'));
+  assert(validateLayout(xhamster).length === 0, 'xhamster layout should be valid');
+  const xhWatch = matchLayoutTargets(
+    [xhamster],
+    'https://xhamster.com/videos/example-xh7BSw0'
+  );
+  assert(xhWatch.length === 1 && xhWatch[0].id === 'watch' && xhWatch[0].entity === 'Video', 'xhamster watch');
+  assert(
+    xhWatch[0].anchor.selector === '.controls .report-control, .controls [data-role="report-button"]' &&
+      xhWatch[0].anchor.insert === 'afterend' &&
+      xhWatch[0].anchor.replace === false,
+    'xhamster button follows the flag'
+  );
+  assert(
+    xhWatch[0].button.showText === true &&
+      xhWatch[0].button.colors.background === '#333333' &&
+      xhWatch[0].button.colors.icon === '#dadada' &&
+      xhWatch[0].button.colors.text === '#dadada',
+    'xhamster button colors'
+  );
+  const xhHome = matchLayoutTargets([xhamster], 'https://xhamster.com/');
+  assert(xhHome.length === 0, 'xhamster home is not a watch page');
+  const xhListing = matchLayoutTargets([xhamster], 'https://xhamster.com/categories/example');
+  assert(xhListing.length === 0, 'xhamster category is not a watch page');
+  const xhSub = matchLayoutTargets(
+    [xhamster],
+    'https://ge.xhamster.com/videos/example-xh7BSw0'
+  );
+  assert(xhSub.length === 1, 'xhamster subdomains match the watch layout');
 }
 
 function checkFiles() {
