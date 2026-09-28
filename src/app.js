@@ -36,6 +36,8 @@
     openCoveLink: document.getElementById('open-cove-link'),
     settingsForm: document.getElementById('settings-form'),
     settingsSaved: document.getElementById('settings-saved'),
+    btnTestCove: document.getElementById('btn-test-cove'),
+    coveTestStatus: document.getElementById('cove-test-status'),
     coveUrl: document.getElementById('coveUrl'),
     apiToken: document.getElementById('apiToken'),
     preferredMode: document.getElementById('preferredMode'),
@@ -102,9 +104,8 @@
     return settings;
   }
 
-  async function saveSettings(event) {
-    event.preventDefault();
-    const next = {
+  function formSettings() {
+    return {
       coveUrl: normalizeCoveUrl(els.coveUrl.value),
       apiToken: els.apiToken.value.trim(),
       preferredMode: els.preferredMode.value,
@@ -115,6 +116,71 @@
       queueAllMatches: els.queueAllMatches.checked,
       autoApplyMetadata: els.autoApplyMetadata.checked,
     };
+  }
+
+  function requestHostPermission() {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type: 'request-host-permission' }, (response) => {
+        if (chrome.runtime.lastError) {
+          resolve(false);
+          return;
+        }
+        resolve(!!(response && response.ok));
+      });
+    });
+  }
+
+  function connectionErrorMessage(error, coveUrl) {
+    const status = error && error.status;
+    if (status === 401 || status === 403) return 'Cove rejected the API token.';
+    if (!status) return `Could not reach Cove at ${coveUrl}.`;
+    const raw = error && error.message ? String(error.message) : '';
+    const short = raw.replace(/\s+/g, ' ').trim().slice(0, 180);
+    return short || `Cove returned ${status}.`;
+  }
+
+  async function testCoveConnection() {
+    const probe = formSettings();
+    if (!probe.coveUrl) {
+      showStatus(els.coveTestStatus, 'Enter a Cove URL first.', 'error');
+      return;
+    }
+    let parsed;
+    try {
+      parsed = new URL(probe.coveUrl);
+    } catch (_) {
+      parsed = null;
+    }
+    if (!parsed || (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')) {
+      showStatus(els.coveTestStatus, 'Cove URL must start with http:// or https://.', 'error');
+      return;
+    }
+
+    els.btnTestCove.disabled = true;
+    showStatus(els.coveTestStatus, 'Testing connection…');
+    try {
+      const granted = await requestHostPermission();
+      if (!granted) {
+        showStatus(els.coveTestStatus, 'Site access was denied. Grant permission to reach Cove.', 'error');
+        return;
+      }
+      const { body } = await coveFetch(probe, '/api/system/downloaders', { method: 'GET' });
+      if (!Array.isArray(body)) {
+        showStatus(els.coveTestStatus, 'Cove responded, but the downloaders list was not recognized.', 'error');
+        return;
+      }
+      const noun = body.length === 1 ? 'downloader' : 'downloaders';
+      showStatus(els.coveTestStatus, `Connected to Cove. ${body.length} ${noun} available.`, 'ok');
+    } catch (error) {
+      showStatus(els.coveTestStatus, connectionErrorMessage(error, probe.coveUrl), 'error');
+    } finally {
+      els.btnTestCove.disabled = false;
+    }
+  }
+
+  async function saveSettings(event) {
+    event.preventDefault();
+    const next = formSettings();
 
     if (
       next.coveUrl ||
@@ -122,15 +188,7 @@
       next.showOnSupportedSites ||
       next.showStylizedDownloadButton
     ) {
-      const granted = await new Promise((resolve) => {
-        chrome.runtime.sendMessage({ type: 'request-host-permission' }, (response) => {
-          if (chrome.runtime.lastError) {
-            resolve(false);
-            return;
-          }
-          resolve(!!(response && response.ok));
-        });
-      });
+      const granted = await requestHostPermission();
       if (!granted) {
         els.settingsSaved.hidden = false;
         els.settingsSaved.textContent =
@@ -491,6 +549,12 @@
   });
 
   els.settingsForm.addEventListener('submit', saveSettings);
+  els.btnTestCove.addEventListener('click', () => {
+    testCoveConnection().catch((error) => {
+      showStatus(els.coveTestStatus, error.message || String(error), 'error');
+      els.btnTestCove.disabled = false;
+    });
+  });
   els.btnRematch.addEventListener('click', () => runMatch(pendingUrl, activePlacementEntity));
   els.btnSend.addEventListener('click', sendSelected);
   els.btnGotoQueue.addEventListener('click', () => setTab('queue'));
