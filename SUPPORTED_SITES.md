@@ -83,7 +83,7 @@ Turn on **Show stylized download button**. A watch page whose path starts with `
 
 ## SpankBang stylized button
 
-Turn on **Show stylized download button**. A watch page adds Download in the Subscribe and Message row, immediately before Subscribe. Subscribe and Message stay on that line and move over to make room. Download uses the same gold fill and dark label as Subscribe.
+Turn on **Show stylized download button**. A watch page adds Download in the Subscribe and Message row, immediately before Subscribe. Subscribe and Message stay on that line and move over to make room. Download uses the same gold fill and dark label as Subscribe, and it keeps their height as the window changes. On a narrow window, when that row stacks, Download stretches to the same width.
 
 A watch URL starts with the video id, as in `/iavy/video/...`, so the layout path is `/`. The button is added only when that page has the Subscribe control. Home, search, and profile pages do not.
 

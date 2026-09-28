@@ -288,6 +288,7 @@ function runSelfTests() {
   );
   assert(
     sbWatch[0].button.showText === true &&
+      sbWatch[0].button.fit === true &&
       sbWatch[0].button.colors.background === '#fdb82e' &&
       sbWatch[0].button.colors.text === '#440b05' &&
       sbWatch[0].button.colors.icon === '#440b05',
