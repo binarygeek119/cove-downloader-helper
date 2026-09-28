@@ -62,16 +62,20 @@ function runSelfTests() {
   assert(photo[0].anchor.selector === '#ratingSpace > li.omega' && photo[0].anchor.insert === 'afterend', 'photo bar');
 
   const gifPage = matchLayoutTargets([sample], 'https://www.pornhub.com/gif/55153161');
-  assert(gifPage.length === 1 && gifPage[0].id === 'gif' && gifPage[0].entity === 'Image', 'gif page');
-  assert(gifPage[0].button.size === 'small' && gifPage[0].button.showText === false, 'gif icon');
+  const gifIds = gifPage.map((target) => target.id).sort().join();
+  assert(gifIds === 'gif,gifs', 'gif page matches both gif targets');
+  assert(gifPage.every((target) => target.entity === 'Image' && target.path === '/gif'), 'gif path');
+  const gifBar = gifPage.find((target) => target.id === 'gif');
+  assert(gifBar.button.size === 'small' && gifBar.button.showText === false, 'gif icon');
   assert(
-    gifPage[0].anchor.selector === 'ul.votingWrap > li:has(#favoriteGifButton)' &&
-      gifPage[0].anchor.insert === 'afterend',
+    gifBar.anchor.selector === 'ul.votingWrap > li:has(#favoriteGifButton)' &&
+      gifBar.anchor.insert === 'afterend',
     'gif bar'
   );
+  assert(gifPage.find((target) => target.id === 'gifs').anchor.selector === '.gifVideoBlock', 'gif grid');
 
   const gifListing = matchLayoutTargets([sample], 'https://www.pornhub.com/gifs');
-  assert(gifListing.length === 1 && gifListing[0].id === 'gif', '/gif also matches /gifs');
+  assert(gifListing.map((target) => target.id).sort().join() === 'gif,gifs', '/gifs uses the /gif prefix');
 
   const gifLater = matchLayoutTargets([sample], 'https://www.pornhub.com/user/gifs');
   assert(gifLater.length === 0, 'path must be a prefix, not a later segment');
