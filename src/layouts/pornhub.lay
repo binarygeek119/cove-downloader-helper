@@ -43,7 +43,7 @@
     {
       "id": "gifs",
       "kind": "gif",
-      "path": "/gifs",
+      "path": "/gif",
       "anchor": { "selector": ".gifVideoBlock", "insert": "beforeend" },
       "button": {
         "size": "small",
