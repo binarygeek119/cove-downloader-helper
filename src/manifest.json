@@ -5,6 +5,7 @@
   "manifest_version": 3,
   "homepage_url": "https://github.com/binarygeek119/cove-downloader-helper",
   "minimum_chrome_version": "116",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0YHZc7qSGUGfNmkLznpqq+qsKUc4Y4LX67SXjroEANGh2333qRYjpU3pUjAcZAtrxkun35gNMi4O/9XALi6Lu2VOHlIPnEgun2Nsirn6CKbmhfNwEUR9skUzgDuh5dcKhYj4w0L4jVwhJhl35uxyBS470t4L65DngxEdALAdJ8SkkRYEemqaAnTIGI2Gd7wcUlqWVV1tWkAM5VB7e8uciGlQ+xBbuBQN5Cj7Ea8oFCg5JyV9sM4nkhXr9knjk2ccTOqE+2iLCDLFSYuk8kCdDf0J27xX2uFDpV186w47FA7bkQ+wE6Nzz4w/LdNxa8S7Fuf9ml/OXEJr9XwwAWXaRwIDAQAB",
   "permissions": ["contextMenus", "storage", "tabs", "scripting", "activeTab"],
   "optional_host_permissions": ["http://*/*", "https://*/*"],
   "background": {

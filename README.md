@@ -75,7 +75,7 @@ On every push to `master`/`main`, GitHub Actions packs the extension and publish
 - `CHROME_WEBSTORE_CLIENT_ID`
 - `CHROME_WEBSTORE_CLIENT_SECRET`
 - `CHROME_WEBSTORE_REFRESH_TOKEN`
-- `CHROME_EXTENSION_ID`
+- `CHROME_EXTENSION_ID` (`okmkahgbcigkpmaagpddnadpffjpibgm`)
 - `CHROME_PUBLISHER_ID`
 
 Create the store item once in the Developer Dashboard (listing and privacy tabs filled in). Each later publish needs a higher `version` in `src/manifest.json` than the version already in the store. Until the secrets exist, the store job logs a warning and succeeds. A manual run of the workflow can turn off **Publish the packed zip to the Chrome Web Store**.
