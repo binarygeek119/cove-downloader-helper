@@ -16,6 +16,22 @@ Upload:
 
 (or the version printed by the script)
 
+## Automated publish
+
+After the first dashboard upload, `.github/workflows/pack-and-release.yml` publishes later versions. It runs `scripts/publish-chrome-webstore.sh` on pushes to `master`/`main`, and on a manual run unless **Publish the packed zip to the Chrome Web Store** is turned off.
+
+Add these repository secrets ([Chrome Web Store API](https://developer.chrome.com/docs/webstore/using-api)):
+
+| Secret | Value |
+| --- | --- |
+| `CHROME_WEBSTORE_CLIENT_ID` | OAuth client ID |
+| `CHROME_WEBSTORE_CLIENT_SECRET` | OAuth client secret |
+| `CHROME_WEBSTORE_REFRESH_TOKEN` | Refresh token for scope `https://www.googleapis.com/auth/chromewebstore` |
+| `CHROME_EXTENSION_ID` | Store item ID |
+| `CHROME_PUBLISHER_ID` | Publisher ID from Developer Dashboard → Publisher → Settings |
+
+The job skips with a warning until every secret is set. Raise `version` in `src/manifest.json` before each publish; the store rejects an upload that does not increase it.
+
 ## Store listing
 
 | Field | Value |
@@ -103,6 +119,7 @@ https://github.com/binarygeek119/cove-downloader-helper/blob/master/PRIVACY.md
 - [ ] Confirm optional host permission prompt appears on first send / settings save
 - [ ] In-page buttons appear only when enabled + permission granted
 - [ ] Zip built with `./scripts/pack-extension.sh --force`
+- [ ] Store secrets added if GitHub Actions should publish later versions
 - [ ] Privacy policy URL opens publicly
 - [ ] Store icon + at least one 1280×800 screenshot uploaded
 - [ ] Permission justifications pasted into Privacy tab

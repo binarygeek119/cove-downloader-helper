@@ -4,6 +4,11 @@ on:
   push:
     branches: [master, main]
   workflow_dispatch:
+    inputs:
+      publish_to_store:
+        description: Publish the packed zip to the Chrome Web Store
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -12,6 +17,8 @@ jobs:
   pack-and-release:
     name: Pack Chrome extension and publish release
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -65,3 +72,66 @@ jobs:
           overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-chrome-web-store:
+    name: Publish to Chrome Web Store
+    needs: pack-and-release
+    if: github.event_name != 'workflow_dispatch' || inputs.publish_to_store
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Check store credentials
+        id: creds
+        env:
+          CHROME_WEBSTORE_CLIENT_ID: ${{ secrets.CHROME_WEBSTORE_CLIENT_ID }}
+          CHROME_WEBSTORE_CLIENT_SECRET: ${{ secrets.CHROME_WEBSTORE_CLIENT_SECRET }}
+          CHROME_WEBSTORE_REFRESH_TOKEN: ${{ secrets.CHROME_WEBSTORE_REFRESH_TOKEN }}
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+        run: |
+          missing=0
+          for name in \
+            CHROME_WEBSTORE_CLIENT_ID \
+            CHROME_WEBSTORE_CLIENT_SECRET \
+            CHROME_WEBSTORE_REFRESH_TOKEN \
+            CHROME_EXTENSION_ID \
+            CHROME_PUBLISHER_ID
+          do
+            if [[ -z "${!name:-}" ]]; then
+              echo "missing secret: $name"
+              missing=1
+            fi
+          done
+          if [[ "$missing" -eq 1 ]]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Chrome Web Store secrets are not set. Skipping store publish."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.creds.outputs.ready == 'true'
+        uses: actions/checkout@v4
+
+      - name: Download packed extension
+        if: steps.creds.outputs.ready == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: cove-downloader-helper-${{ needs.pack-and-release.outputs.version }}-packed
+          path: builds
+
+      - name: Publish
+        if: steps.creds.outputs.ready == 'true'
+        env:
+          CHROME_WEBSTORE_CLIENT_ID: ${{ secrets.CHROME_WEBSTORE_CLIENT_ID }}
+          CHROME_WEBSTORE_CLIENT_SECRET: ${{ secrets.CHROME_WEBSTORE_CLIENT_SECRET }}
+          CHROME_WEBSTORE_REFRESH_TOKEN: ${{ secrets.CHROME_WEBSTORE_REFRESH_TOKEN }}
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+        run: |
+          chmod +x ./scripts/publish-chrome-webstore.sh
+          zip="$(find builds -name 'cove-downloader-helper-*-chrome.zip' -print -quit)"
+          test -n "$zip"
+          ./scripts/publish-chrome-webstore.sh "$zip"
