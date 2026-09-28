@@ -39,6 +39,7 @@
     preferredMode: document.getElementById('preferredMode'),
     showInPageButtons: document.getElementById('showInPageButtons'),
     showOnSupportedSites: document.getElementById('showOnSupportedSites'),
+    showStylizedDownloadButton: document.getElementById('showStylizedDownloadButton'),
     autoSend: document.getElementById('autoSend'),
     queueAllMatches: document.getElementById('queueAllMatches'),
     autoApplyMetadata: document.getElementById('autoApplyMetadata'),
@@ -84,6 +85,7 @@
     els.preferredMode.value = data.preferredMode || 'Video';
     els.showInPageButtons.checked = !!data.showInPageButtons;
     els.showOnSupportedSites.checked = !!data.showOnSupportedSites;
+    els.showStylizedDownloadButton.checked = !!data.showStylizedDownloadButton;
     els.autoSend.checked = !!data.autoSend;
     els.queueAllMatches.checked = !!data.queueAllMatches;
     els.autoApplyMetadata.checked = !!data.autoApplyMetadata;
@@ -106,6 +108,7 @@
       preferredMode: els.preferredMode.value,
       showInPageButtons: els.showInPageButtons.checked,
       showOnSupportedSites: els.showOnSupportedSites.checked,
+      showStylizedDownloadButton: els.showStylizedDownloadButton.checked,
       autoSend: els.autoSend.checked,
       queueAllMatches: els.queueAllMatches.checked,
       autoApplyMetadata: els.autoApplyMetadata.checked,

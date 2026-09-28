@@ -11,6 +11,7 @@ const DEFAULT_SETTINGS = {
   preferredMode: 'Video',
   showInPageButtons: true,
   showOnSupportedSites: false,
+  showStylizedDownloadButton: false,
   autoSend: false,
   queueAllMatches: false,
   autoApplyMetadata: true,
@@ -56,6 +57,7 @@ async function getSettings() {
         ? DEFAULT_SETTINGS.showInPageButtons
         : !!data.showInPageButtons,
     showOnSupportedSites: !!data.showOnSupportedSites,
+    showStylizedDownloadButton: !!data.showStylizedDownloadButton,
     autoSend: !!data.autoSend,
     queueAllMatches: !!data.queueAllMatches,
     autoApplyMetadata:
