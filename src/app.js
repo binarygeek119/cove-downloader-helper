@@ -32,7 +32,6 @@
     btnRematch: document.getElementById('btn-rematch'),
     startedJobs: document.getElementById('started-jobs'),
     startedJobsList: document.getElementById('started-jobs-list'),
-    btnGotoQueue: document.getElementById('btn-goto-queue'),
     queueStatus: document.getElementById('queue-status'),
     queueList: document.getElementById('queue-list'),
     historyList: document.getElementById('history-list'),
@@ -611,7 +610,6 @@
   });
   els.btnRematch.addEventListener('click', () => runMatch(pendingUrl, activePlacementEntity));
   els.btnSend.addEventListener('click', sendSelected);
-  els.btnGotoQueue.addEventListener('click', () => setTab('queue'));
   els.btnRefreshQueue.addEventListener('click', refreshQueue);
   if (els.btnClearHistory) {
     els.btnClearHistory.addEventListener('click', async (event) => {
