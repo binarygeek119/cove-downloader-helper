@@ -12,7 +12,7 @@ Build the store zip (manifest at archive root):
 
 Upload:
 
-`builds/cove-downloader-helper-1.0.6-chrome.zip`
+`builds/cove-downloader-helper-1.0.7-chrome.zip`
 
 (or the version printed by the script)
 
