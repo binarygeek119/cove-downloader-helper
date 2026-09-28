@@ -14,7 +14,7 @@ Repository: https://github.com/binarygeek119/cove-downloader-helper
 
 - **Left-click** the toolbar icon to download the **current page**
 - **Right-click** a link or page → Send to Cove
-- Optional bottom-right download bubble on every page (**Show on all pages**) or only on supported sites (**Show in supported sites**)
+- Optional bottom-right download bubble on every page (**Show on all pages**) or only on [supported sites](SUPPORTED_SITES.md) (**Show in supported sites**)
 - Optional site-styled download button from a layout file (**Show stylized download button**). See [src/layouts/README.md](src/layouts/README.md) to add a site.
 - Cove **match** API with quality picker and **Video / Audio / Text** type override
 - **Job Queue** tab for live Cove jobs (progress, cancel, history)
@@ -55,7 +55,7 @@ Install the community downloaders from the [official extension registry](https:/
 - Right-click a link or the page background to send that URL.
 - If the matcher picks the wrong type, use **Type override** (Video / Audio / Text) before sending.
 - Toggle **Show on all pages** to show the bottom-right download bubble on every page.
-- Toggle **Show in supported sites** to show that same bubble only on sites Cove downloaders support.
+- Toggle **Show in supported sites** to show that same bubble only on the [supported sites](SUPPORTED_SITES.md).
 - Toggle **Show stylized download button** to place a site-styled button from [`src/layouts`](src/layouts/README.md). The button’s path chooses video, image, or text for that click.
 - Use **Job Queue** to watch and cancel active Cove jobs.
 

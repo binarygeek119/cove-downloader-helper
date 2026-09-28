@@ -55,6 +55,7 @@
     button[data-size="medium"][data-text="0"] { width: 36px; padding: 0; }
     button[data-size="large"][data-text="0"] { width: 44px; padding: 0; }
     button[data-size="small"] svg { width: 18px; height: 10px; }
+    button[data-size="small"][data-text="0"] svg { width: 22px; height: 12px; }
     button[data-size="medium"] svg { width: 22px; height: 12px; }
     button[data-size="large"] svg { width: 26px; height: 14px; }
     button[data-shape="square"] { border-radius: 0; }
@@ -309,14 +310,29 @@
     const parent = host.parentElement;
     const sibling = host.previousElementSibling || host.nextElementSibling;
     if (!parent || parent.tagName !== 'UL' || !sibling || sibling.tagName !== 'LI') return;
+    host.style.display = 'flex';
+    host.style.alignItems = 'center';
+    host.style.justifyContent = 'center';
+    host.style.margin = '0';
+    const height = sibling.getBoundingClientRect().height;
+    if (height > 0) host.style.height = `${Math.round(height)}px`;
     const floated = getComputedStyle(sibling).float;
-    if (floated !== 'left' && floated !== 'right') return;
-    host.style.float = floated;
+    if (floated === 'left' || floated === 'right') host.style.float = floated;
   }
 
   function stayInButtonRow(host) {
     const parent = host.parentElement;
     if (!parent) return;
+    if (parent.tagName === 'UL') {
+      alignHostWithFloatedItem(host);
+      const display = getComputedStyle(parent).display;
+      if (display === 'flex' || display === 'inline-flex') {
+        host.style.float = '';
+        host.style.flex = '0 0 auto';
+        host.style.alignSelf = 'center';
+      }
+      return;
+    }
     const parentStyle = getComputedStyle(parent);
     const display = parentStyle.display;
     if (display === 'flex' || display === 'inline-flex') {
