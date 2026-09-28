@@ -384,11 +384,9 @@ chrome.contextMenus.onClicked.addListener((item, tab) => {
   void run();
 });
 
-const DIRECT_MEDIA_EXT = /\.(?:mp4|m4v|webm|mov|m3u8|mpd|mkv|ogv|ogg|flv)(?:$|[?#])/i;
-
-function isDirectMediaUrl(url) {
+function isVideoFileUrl(url) {
   try {
-    return DIRECT_MEDIA_EXT.test(new URL(url).pathname);
+    return /\.(?:mp4|m4v|webm|mov|m3u8|mpd|mkv|ogv|ogg|flv)$/i.test(new URL(url).pathname);
   } catch (_) {
     return false;
   }
@@ -397,7 +395,7 @@ function isDirectMediaUrl(url) {
 // yt-dlp reads a referer smuggled in the URL fragment. Direct file hosts
 // such as Erome reject the download unless that referer is the page.
 function videoUrlForCove(mediaUrl, pageUrl) {
-  if (!isDirectMediaUrl(mediaUrl) || !isHttpUrl(pageUrl)) return mediaUrl;
+  if (!isVideoFileUrl(mediaUrl) || !isHttpUrl(pageUrl)) return mediaUrl;
   try {
     const media = new URL(mediaUrl);
     const page = new URL(pageUrl);
@@ -409,16 +407,35 @@ function videoUrlForCove(mediaUrl, pageUrl) {
   }
 }
 
+function withTimeout(promise, ms) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Timed out reading videos on the page.')), ms);
+    Promise.resolve(promise).then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
 async function collectPageVideos(tabId) {
   if (!tabId) return { videos: [], pageUrl: '' };
   await chrome.scripting.executeScript({
     target: { tabId },
     files: ['page-videos.js'],
   });
-  const [injected] = await chrome.scripting.executeScript({
-    target: { tabId },
-    func: () => (globalThis.coveCollectPageVideos ? globalThis.coveCollectPageVideos() : { videos: [] }),
-  });
+  const [injected] = await withTimeout(
+    chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => (globalThis.coveCollectPageVideos ? globalThis.coveCollectPageVideos() : { videos: [] }),
+    }),
+    8000
+  );
   const result = injected && injected.result;
   if (Array.isArray(result)) return { videos: result, pageUrl: '' };
   const videos = result && Array.isArray(result.videos) ? result.videos : [];
@@ -447,7 +464,7 @@ async function downloadPageVideos(urls, pageUrl) {
   let error = '';
   for (const url of list) {
     try {
-      if (isDirectMediaUrl(url)) {
+      if (isVideoFileUrl(url)) {
         const match = ytDlpFallback(videoUrlForCove(url, referer), 'Video');
         if (referer) match.sourceUrl = referer;
         await startDownload(settings, buildDownloadPayload(match, settings));

@@ -1,8 +1,7 @@
 /* Collect embedded videos on the current page for the side-panel picker. */
 (function () {
-  if (globalThis.coveCollectPageVideos) return;
-
-  let cache = { key: '', pageUrl: '', videos: [] };
+  const state = globalThis.__covePageVideosState || { cache: { key: '', pageUrl: '', videos: [] } };
+  globalThis.__covePageVideosState = state;
 
   function absoluteUrl(value) {
     if (!value) return '';
@@ -84,6 +83,10 @@
     return /^\d{1,2}:\d{2}(:\d{2})?$/.test(value);
   }
 
+  function isZeroTime(value) {
+    return /^0+:00(:00)?$/.test(value);
+  }
+
   function formatDuration(seconds) {
     if (!Number.isFinite(seconds) || seconds <= 0 || seconds > 86400) return '';
     const total = Math.round(seconds);
@@ -101,6 +104,7 @@
 
   function durationLabel(video) {
     const ownUrl = mediaUrl(video);
+    const found = [];
     let node = video.parentElement;
     for (let depth = 0; node && depth < 6; depth += 1, node = node.parentElement) {
       const times = node.querySelectorAll('.duration, [class*="duration"], time');
@@ -114,7 +118,7 @@
           if (hostUrl && hostUrl !== ownUrl) continue;
         }
         const text = cleanText(span.textContent);
-        if (looksLikeTime(text)) return text;
+        if (looksLikeTime(text)) found.push(text);
       }
       const different = [...node.querySelectorAll('video')].some((el) => {
         if (el === video) return false;
@@ -123,7 +127,11 @@
       });
       if (different) break;
     }
-    return formatDuration(video.duration);
+    const positive = found.find((text) => !isZeroTime(text));
+    if (positive) return positive;
+    const probed = formatDuration(video.duration);
+    if (probed && !isZeroTime(probed)) return probed;
+    return '';
   }
 
   function ownTitle(video) {
@@ -193,7 +201,7 @@
   async function thumbnailData(url) {
     if (!url) return '';
     try {
-      const response = await fetch(url, { credentials: 'omit' });
+      const response = await fetch(url, { credentials: 'omit', signal: AbortSignal.timeout(2000) });
       if (!response.ok) return url;
       const blob = await response.blob();
       if (!blob.size || blob.size > 180000) return url;
@@ -258,13 +266,13 @@
     const currentPage = pageUrl();
     const quick = collectQuick();
     if (quick.length < 2) {
-      cache = { key: '', pageUrl: currentPage, videos: [] };
+      state.cache = { key: '', pageUrl: currentPage, videos: [] };
       return { pageUrl: currentPage, videos: [] };
     }
 
-    const key = quick.map((item) => item.url).join('\n');
-    if (key === cache.key && cache.pageUrl === currentPage) {
-      return { pageUrl: currentPage, unchanged: true, count: cache.videos.length };
+    const key = quick.map((item) => [item.url, item.duration, item.title].join('|')).join('\n');
+    if (key === state.cache.key && state.cache.pageUrl === currentPage) {
+      return { pageUrl: currentPage, unchanged: true, videos: state.cache.videos };
     }
 
     const title = pageTitle();
@@ -286,7 +294,7 @@
       else if (sharedTitle) item.title = item.title + ' (' + (index + 1) + ')';
     });
 
-    cache = { key, pageUrl: currentPage, videos: items };
+    state.cache = { key, pageUrl: currentPage, videos: items };
     return { pageUrl: currentPage, videos: items };
   };
 })();
