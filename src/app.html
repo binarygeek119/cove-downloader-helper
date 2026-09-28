@@ -48,7 +48,10 @@
       <section id="panel-queue" class="panel" role="tabpanel" hidden>
         <div class="row between">
           <h2>Active jobs</h2>
-          <button type="button" id="btn-refresh-queue" class="secondary">Refresh</button>
+          <div class="row tight">
+            <button type="button" id="btn-open-side-queue" class="secondary">Open beside page</button>
+            <button type="button" id="btn-refresh-queue" class="secondary">Refresh</button>
+          </div>
         </div>
         <p id="queue-status" class="status" hidden></p>
         <div id="queue-list" class="job-list"></div>

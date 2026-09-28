@@ -55,6 +55,22 @@ body {
   line-height: 1.4;
 }
 
+body.side-panel {
+  min-width: 0;
+}
+
+body.side-panel .app-header h1 {
+  font-size: 14px;
+}
+
+body.side-panel main {
+  padding: 10px;
+}
+
+body.side-panel #btn-open-side-queue {
+  display: none;
+}
+
 .app-header {
   padding: 12px 14px 0;
   border-bottom: 1px solid var(--border);
@@ -230,6 +246,10 @@ button:disabled {
 
 .row.between {
   justify-content: space-between;
+}
+
+.row.tight {
+  margin: 0;
 }
 
 .muted {

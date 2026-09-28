@@ -2,6 +2,9 @@ importScripts('shared.js', 'layout-schema.js');
 
 const MENU_LINK_ID = 'cove-send-link';
 const MENU_PAGE_ID = 'cove-send-page';
+const MENU_QUEUE_ID = 'cove-open-queue';
+const MENU_QUEUE_ACTION_ID = 'cove-open-queue-action';
+const JOB_QUEUE_PATH = 'app.html?tab=queue&side=1';
 const CONTENT_SCRIPT_ID = 'cove-inpage-buttons';
 const APP_TAB_ID_KEY = 'coveHelperAppTabId';
 
@@ -19,6 +22,29 @@ function ensureContextMenus() {
       contexts: ['page'],
       documentUrlPatterns: ['http://*/*', 'https://*/*'],
     });
+    chrome.contextMenus.create({
+      id: MENU_QUEUE_ID,
+      title: 'Open job queue',
+      contexts: ['page'],
+      documentUrlPatterns: ['http://*/*', 'https://*/*'],
+    });
+    chrome.contextMenus.create({
+      id: MENU_QUEUE_ACTION_ID,
+      title: 'Open job queue',
+      contexts: ['action'],
+    });
+  });
+}
+
+function enableJobQueuePanel() {
+  if (!chrome.sidePanel) return;
+  chrome.sidePanel.setOptions({ path: JOB_QUEUE_PATH, enabled: true }).catch(() => {});
+}
+
+function openJobQueue(windowId) {
+  if (!chrome.sidePanel || windowId === undefined || windowId === null) return;
+  chrome.sidePanel.open({ windowId }).catch((error) => {
+    console.error('Could not open job queue', error);
   });
 }
 
@@ -111,15 +137,19 @@ async function syncInPageContentScript() {
 
 chrome.runtime.onInstalled.addListener(() => {
   ensureContextMenus();
+  enableJobQueuePanel();
   applyToolbarIcon();
   syncInPageContentScript().catch((error) => console.warn('content script sync failed', error));
 });
 
 chrome.runtime.onStartup.addListener(() => {
   ensureContextMenus();
+  enableJobQueuePanel();
   applyToolbarIcon();
   syncInPageContentScript().catch((error) => console.warn('content script sync failed', error));
 });
+
+enableJobQueuePanel();
 
 applyToolbarIcon();
 syncInPageContentScript().catch(() => {});
@@ -328,6 +358,10 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 chrome.contextMenus.onClicked.addListener((item, tab) => {
+  if (item.menuItemId === MENU_QUEUE_ID || item.menuItemId === MENU_QUEUE_ACTION_ID) {
+    openJobQueue(tab && tab.windowId);
+    return;
+  }
   const run = async () => {
     try {
       let url = null;
