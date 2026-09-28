@@ -1,6 +1,6 @@
 # Privacy Policy — Cove Downloader Helper
 
-**Last updated:** 2026-09-09
+**Last updated:** 2026-09-28
 
 **Extension:** Cove Downloader Helper  
 **Audience:** Adults 18+ only  
@@ -23,6 +23,7 @@ It may process the following information **on your device** and, when you choose
 | Extension preferences (preferred mode, auto-send, downloader button on every page, etc.) | Chrome sync storage | To remember your settings |
 | Page / link URLs you explicitly send | Sent only to your configured Cove URL | To start a download / match job in Cove |
 | Temporary pending URL in session storage | Browser session only | To open the helper Download tab for the URL you just selected |
+| Job ids you clear from Recent history | Chrome local storage on your browser | So cleared history stays hidden in this extension |
 
 The extension does **not** sell user data, does not use data for advertising, and does not send browsing data to the extension author.
 

@@ -364,6 +364,13 @@ button:disabled {
   margin-bottom: 8px;
 }
 
+.history-block summary button {
+  margin-left: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  vertical-align: middle;
+}
+
 h2 {
   font-size: 14px;
   margin: 0;
