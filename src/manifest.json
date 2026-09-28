@@ -1,7 +1,7 @@
 {
   "name": "Cove Downloader Helper",
   "description": "Send page and link URLs to your self-hosted Cove app to download with yt-dlp and other Cove downloaders.",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "manifest_version": 3,
   "homepage_url": "https://github.com/binarygeek119/cove-downloader-helper",
   "minimum_chrome_version": "116",
