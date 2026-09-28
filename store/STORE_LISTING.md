@@ -22,6 +22,8 @@ Pushes to `master` run `.github/workflows/pack-and-release.yml`. After the GitHu
 
 Repository secrets: `CHROME_WEBSTORE_CLIENT_ID`, `CHROME_WEBSTORE_CLIENT_SECRET`, `CHROME_WEBSTORE_REFRESH_TOKEN`, and `CHROME_PUBLISHER_ID`. The job waits until those are set.
 
+Mint the refresh token with scope `https://www.googleapis.com/auth/chromewebstore` and call `https://chromewebstore.googleapis.com`. The legacy host `www.googleapis.com/chromewebstore/v1.1` rejects that scope.
+
 ## Store listing
 
 | Field | Value |
