@@ -29,6 +29,7 @@
       videos: document.getElementById('panel-videos'),
       queue: document.getElementById('panel-queue'),
       settings: document.getElementById('panel-settings'),
+      about: document.getElementById('panel-about'),
     },
     tabVideos: document.querySelector('.tab[data-tab="videos"]'),
     videosHeading: document.getElementById('videos-heading'),
@@ -1002,7 +1003,7 @@
 
   async function init() {
     const versionEl = document.getElementById('extension-version');
-    if (versionEl) versionEl.textContent = `Version ${chrome.runtime.getManifest().version}`;
+    if (versionEl) versionEl.textContent = chrome.runtime.getManifest().version;
 
     await loadSettings();
     await loadClearedHistory();
@@ -1012,7 +1013,7 @@
       showStatus(els.downloadStatus, errorParam, 'error');
     }
 
-    setTab(['download', 'videos', 'queue', 'settings'].includes(currentTab) ? currentTab : 'download');
+    setTab(['download', 'videos', 'queue', 'settings', 'about'].includes(currentTab) ? currentTab : 'download');
     const storedSelector = await sessionGet(['eromeSelector']);
     if (storedSelector.eromeSelector) applyEromeSelector(storedSelector.eromeSelector);
     startVideoPolling();
