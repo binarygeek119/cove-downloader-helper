@@ -59,6 +59,7 @@
     button[data-size="medium"][data-text="0"] { width: 36px; padding: 0; }
     button[data-size="large"][data-text="0"] { width: 44px; padding: 0; }
     button[data-size="small"] svg { width: 14px; height: 14px; }
+    button[data-size="small"][data-text="0"] svg { width: 18px; height: 18px; }
     button[data-size="medium"] svg { width: 16px; height: 16px; }
     button[data-size="large"] svg { width: 20px; height: 20px; }
     button[data-shape="square"] { border-radius: 0; }
@@ -316,6 +317,12 @@
     const floated = getComputedStyle(sibling).float;
     if (floated !== 'left' && floated !== 'right') return;
     host.style.float = floated;
+    host.style.display = 'flex';
+    host.style.alignItems = 'center';
+    host.style.justifyContent = 'center';
+    host.style.margin = '0';
+    const height = sibling.getBoundingClientRect().height;
+    if (height > 0) host.style.height = `${Math.round(height)}px`;
   }
 
   function stayInButtonRow(host) {
