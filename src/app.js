@@ -38,7 +38,6 @@
     btnRefreshQueue: document.getElementById('btn-refresh-queue'),
     btnClearHistory: document.getElementById('btn-clear-history'),
     btnOpenSideQueue: document.getElementById('btn-open-side-queue'),
-    openCoveLink: document.getElementById('open-cove-link'),
     settingsForm: document.getElementById('settings-form'),
     settingsSaved: document.getElementById('settings-saved'),
     btnTestCove: document.getElementById('btn-test-cove'),
@@ -98,9 +97,6 @@
     els.autoSend.checked = !!data.autoSend;
     els.queueAllMatches.checked = !!data.queueAllMatches;
     els.autoApplyMetadata.checked = !!data.autoApplyMetadata;
-    if (data.coveUrl) {
-      els.openCoveLink.href = data.coveUrl;
-    }
   }
 
   async function loadSettings() {
