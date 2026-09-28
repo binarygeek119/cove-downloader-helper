@@ -38,6 +38,7 @@
     btnRefreshQueue: document.getElementById('btn-refresh-queue'),
     btnClearHistory: document.getElementById('btn-clear-history'),
     btnOpenSideQueue: document.getElementById('btn-open-side-queue'),
+    btnOpenCove: document.getElementById('btn-open-cove'),
     settingsForm: document.getElementById('settings-form'),
     settingsSaved: document.getElementById('settings-saved'),
     btnTestCove: document.getElementById('btn-test-cove'),
@@ -97,6 +98,26 @@
     els.autoSend.checked = !!data.autoSend;
     els.queueAllMatches.checked = !!data.queueAllMatches;
     els.autoApplyMetadata.checked = !!data.autoApplyMetadata;
+    setOpenCoveButton(data.coveUrl);
+  }
+
+  function setOpenCoveButton(coveUrl) {
+    const url = normalizeCoveUrl(coveUrl || '');
+    let safe = '';
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') safe = url;
+    } catch (_) {
+      safe = '';
+    }
+    if (!els.btnOpenCove) return;
+    if (!safe) {
+      els.btnOpenCove.hidden = true;
+      els.btnOpenCove.removeAttribute('href');
+      return;
+    }
+    els.btnOpenCove.hidden = false;
+    els.btnOpenCove.href = safe;
   }
 
   async function loadSettings() {
