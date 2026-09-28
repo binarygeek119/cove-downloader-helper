@@ -354,6 +354,13 @@ button:disabled {
   color: var(--accent);
 }
 
+.plugin-version {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: left;
+}
+
 .history-block {
   margin-top: 16px;
 }
