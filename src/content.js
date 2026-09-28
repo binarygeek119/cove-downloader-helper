@@ -20,6 +20,7 @@
   let currentTargets = [];
   let layoutObserver = null;
   let layoutPlaceQueued = false;
+  let layoutPlaceAgain = false;
   let layoutRequest = 0;
   const LAYOUT_HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
   const LAYOUT_BUTTON_STYLE = `
@@ -565,13 +566,31 @@
   }
 
   let layoutSizeObserver = null;
+  const layoutFitWatch = new WeakMap();
 
-  function watchLayoutRow(host) {
+  function watchLayoutRow(host, target) {
     if (!window.ResizeObserver || !host || !host.parentElement) return;
+    const anchor = target && target.anchor;
+    const placed = !!(anchor && Number.isInteger(anchor.x) && Number.isInteger(anchor.y));
+    if (!target || !target.button || target.button.fit !== true || placed) return;
     if (!layoutSizeObserver) {
       layoutSizeObserver = new ResizeObserver(() => schedulePlaceLayoutButtons());
     }
-    layoutSizeObserver.observe(host.parentElement);
+    const next = new Set();
+    const children = host.parentElement.children;
+    for (let index = 0; index < children.length; index += 1) {
+      const el = children[index];
+      if (el === host || el.hasAttribute('data-cove-replaced')) continue;
+      next.add(el);
+      layoutSizeObserver.observe(el);
+    }
+    const previous = layoutFitWatch.get(host);
+    if (previous) {
+      previous.forEach((el) => {
+        if (!next.has(el)) layoutSizeObserver.unobserve(el);
+      });
+    }
+    layoutFitWatch.set(host, next);
   }
 
   function createLayoutButton(target) {
@@ -667,7 +686,7 @@
       const existing = findLayoutHost(target.id);
       if (layoutHostPlaced(existing, anchor, insert)) {
         syncLayoutButton(existing, target);
-        watchLayoutRow(existing);
+        watchLayoutRow(existing, target);
         return;
       }
       if (existing) existing.remove();
@@ -678,7 +697,7 @@
         const placed = target.anchor && Number.isInteger(target.anchor.x) && Number.isInteger(target.anchor.y);
         if (!placed) stayInButtonRow(host);
         syncLayoutButton(host, target);
-        watchLayoutRow(host);
+        watchLayoutRow(host, target);
       } catch (_) {
         host.remove();
       }
@@ -692,15 +711,22 @@
   }
 
   function schedulePlaceLayoutButtons() {
-    if (layoutPlaceQueued) return;
+    if (layoutPlaceQueued) {
+      layoutPlaceAgain = true;
+      return;
+    }
     layoutPlaceQueued = true;
     requestAnimationFrame(() => {
       layoutPlaceQueued = false;
       if (!settings.showStylizedDownloadButton) {
+        layoutPlaceAgain = false;
         removeLayoutButtons();
         return;
       }
       placeLayoutButtons(currentTargets);
+      if (!layoutPlaceAgain) return;
+      layoutPlaceAgain = false;
+      schedulePlaceLayoutButtons();
     });
   }
 
@@ -730,9 +756,14 @@
   }
 
   function stopLayoutObserver() {
-    if (!layoutObserver) return;
-    layoutObserver.disconnect();
-    layoutObserver = null;
+    if (layoutObserver) {
+      layoutObserver.disconnect();
+      layoutObserver = null;
+    }
+    if (layoutSizeObserver) {
+      layoutSizeObserver.disconnect();
+      layoutSizeObserver = null;
+    }
   }
 
   function refreshLayoutButtons() {
