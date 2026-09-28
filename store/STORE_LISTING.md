@@ -79,34 +79,89 @@ This extension does not provide a cloud download service. All downloads are hand
 
 Capture extra real UI screenshots from the helper Download / Queue / Settings tabs if reviewers want more product shots.
 
-## Privacy tab
+## Privacy practices tab
 
-**Single purpose:**  
-Help users send selected page or link URLs to their self-hosted Cove instance to queue downloads.
+Paste these into the Developer Dashboard → Privacy practices. Use the same privacy policy URL on the developer account page.
 
 **Privacy policy URL:**  
 https://github.com/binarygeek119/cove-downloader-helper/blob/master/PRIVACY.md
 
-(Prefer a GitHub Pages URL if you enable Pages on this repo; the blob URL is publicly readable.)
+### Single purpose
 
-**Remote code:** None. The extension only loads its own packaged scripts. It calls the user-configured Cove HTTP API.
+```text
+Send a page or link the user selects to the self-hosted Cove server they configure, so that server can download the media.
+```
+
+### Remote code
+
+Select **No, I am not using remote code**.
+
+The extension runs only the scripts packaged in the zip. It calls the Cove HTTP API the user configures. Those responses are JSON data, not code the extension executes.
 
 ### Permission justifications
 
-| Permission | Justification |
-| --- | --- |
-| `storage` | Save Cove URL, optional API token, and user preferences. |
-| `tabs` | Read the active tab URL when the user clicks the toolbar icon or uses page context actions; open the helper UI tab. |
-| `activeTab` | Temporary access to the tab the user invokes the extension on. |
-| `contextMenus` | “Send link/page to Cove” items in the right-click menu. |
-| `scripting` | Inject the optional downloader button on every page only when the user enables Show on all pages and grants site access. |
-| Host access `http://*/*`, `https://*/*` (optional) | Call the user-configured Cove origin (any host/port they choose, including LAN/localhost) and, when Show on all pages is enabled, inject the downloader button on every site. Requested at runtime, not granted until the user approves. |
+If the form shows separate boxes for `http://*/*` and `https://*/*`, paste the host justification into both.
 
-### Data disclosure
+**storage**
 
-- Certify: no sale of user data; not used for creditworthiness / lending.
-- Collected / transmitted: Web history is **not** collected broadly. Only URLs the user explicitly sends, plus settings they enter, go to **their** Cove server.
-- Personally identifiable information: optional API token stored locally in extension storage; not sent to the developer.
+```text
+Saves the Cove server URL, an optional Cove personal access token, and the user's settings (download mode, in-page button choices, auto-send, and queue options) in Chrome sync storage. Also keeps the one URL the user just chose in session storage until the helper window opens. Nothing in storage is sent to the extension developer.
+```
+
+**tabs**
+
+```text
+Reads the URL of the tab the user clicks, or the page they right-click, so that URL can be sent to their Cove server. Finds already-open http(s) tabs so the optional download button can be injected on those tabs right after the user turns that setting on. Opens or focuses the helper tab.
+```
+
+**activeTab**
+
+```text
+Gives temporary access to the tab the user invokes the extension on, so a toolbar click can read that page's URL and send it to the user's Cove server.
+```
+
+**contextMenus**
+
+```text
+Adds "Send link to Cove" and "Send page to Cove" to the right-click menu so the user can choose a link or the current page to send.
+```
+
+**scripting**
+
+```text
+Injects this extension's own packaged content script to show the optional bottom-right download button. Injection runs only after the user enables Show on all pages or Show in supported sites and grants site access. The script does not load or execute remote code.
+```
+
+**Host permission (`http://*/*` and `https://*/*`, optional)**
+
+```text
+Requested at runtime and not granted until the user approves it. The user's Cove server can be any origin they type, including localhost or a LAN address, so the extension needs host access to call that server. The same permission lets the extension read the one page or link URL the user chooses to send, and show the optional download button only after they enable it.
+```
+
+### Data use
+
+Check only these two:
+
+- **Authentication information** — the optional Cove personal access token. It is stored in Chrome sync storage and sent only as an `Authorization: Bearer` header to the Cove URL the user entered.
+- **Website content** — the page URL or link URL the user chooses to send, plus match details Cove returns for that URL (title, quality, downloader). The in-page button also reads a hovered link's URL locally so the user can send that link. The extension does not read page HTML, images, or video in the browser.
+
+Leave these unchecked:
+
+- Personally identifiable information
+- Health information
+- Financial and payment information
+- Personal communications
+- Location
+- Web history — there is no list of visited pages, no visit times, and no background logging of browsing
+- User activity — clicks only start a send the user asked for; mouse, scroll, and keystrokes are not collected
+
+Check all three certifications:
+
+- I do not sell or transfer user data to third parties, outside of the approved use cases
+- I do not use or transfer user data for purposes that are unrelated to my item's single purpose
+- I do not use or transfer user data to determine creditworthiness or for lending purposes
+
+The only place download data goes is the Cove server the user configured. If Chrome Sync is on, settings in `chrome.storage.sync` sync to that user's Google account. The developer does not receive them.
 
 ## Distribution
 
@@ -122,5 +177,5 @@ https://github.com/binarygeek119/cove-downloader-helper/blob/master/PRIVACY.md
 - [ ] Store secrets added if GitHub Actions should publish later versions
 - [ ] Privacy policy URL opens publicly
 - [ ] Store icon + at least one 1280×800 screenshot uploaded
-- [ ] Permission justifications pasted into Privacy tab
+- [ ] Privacy practices tab filled from the paste blocks above (single purpose, remote code = No, two data categories, three certifications)
 - [ ] Developer account one-time registration fee paid ($5 USD)

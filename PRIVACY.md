@@ -1,6 +1,6 @@
 # Privacy Policy — Cove Downloader Helper
 
-**Last updated:** 2026-09-09
+**Last updated:** 2026-09-28
 
 **Extension:** Cove Downloader Helper  
 **Audience:** Adults 18+ only  
@@ -41,6 +41,16 @@ Optional access to `http://*/*` and `https://*/*` is requested so the extension 
 3. Read the page or link URL you choose to send
 
 You can deny site access; core settings still save, but talking to Cove and the downloader button on every page will not work until permission is granted.
+
+## Limited use
+
+This extension follows the Chrome Web Store User Data Policy, including the Limited Use requirements:
+
+- User data is used only to send a page or link the user selects to the Cove server they configure, and to remember the settings needed for that.
+- User data is not sold.
+- User data is not used for advertising, creditworthiness, lending, or any purpose unrelated to that single purpose.
+- User data is not transferred to the extension developer. The only download destination is the Cove server the user configures.
+- The developer does not read user content. Humans do not review URLs, tokens, or page data handled by this extension.
 
 ## Third parties
 
