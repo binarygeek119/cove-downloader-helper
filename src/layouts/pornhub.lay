@@ -68,13 +68,13 @@
         "size": "small",
         "showText": false,
         "label": "Download",
-        "shape": "rounded",
+        "shape": "square",
         "colors": {
-          "background": "#ff9000",
+          "background": "#000000",
           "text": "#ffffff",
           "icon": "#ffffff",
-          "border": "#ff9000",
-          "hoverBackground": "#ffa31a"
+          "border": "#000000",
+          "hoverBackground": "#222222"
         }
       }
     },
@@ -87,13 +87,13 @@
         "size": "small",
         "showText": false,
         "label": "Download",
-        "shape": "rounded",
+        "shape": "square",
         "colors": {
-          "background": "#ff9000",
+          "background": "#000000",
           "text": "#ffffff",
           "icon": "#ffffff",
-          "border": "#ff9000",
-          "hoverBackground": "#ffa31a"
+          "border": "#000000",
+          "hoverBackground": "#222222"
         }
       }
     }

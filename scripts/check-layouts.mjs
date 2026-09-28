@@ -64,6 +64,7 @@ function runSelfTests() {
   assert(photo.every((target) => target.entity === 'Image' && target.path === '/photo'), 'photo path');
   const photoBar = photo.find((target) => target.id === 'photo');
   assert(photoBar.button.size === 'small' && photoBar.button.showText === false, 'photo icon');
+  assert(photoBar.button.colors.background === '#000000' && photoBar.button.colors.icon === '#ffffff', 'photo icon matches the bar');
   assert(photoBar.anchor.selector === '#ratingSpace > li.omega' && photoBar.anchor.insert === 'afterend', 'photo bar');
   assert(photo.find((target) => target.id === 'album').anchor.selector === '.photoAlbum', 'photo album block');
 
@@ -73,6 +74,7 @@ function runSelfTests() {
   assert(gifPage.every((target) => target.entity === 'Image' && target.path === '/gif'), 'gif path');
   const gifBar = gifPage.find((target) => target.id === 'gif');
   assert(gifBar.button.size === 'small' && gifBar.button.showText === false, 'gif icon');
+  assert(gifBar.button.colors.background === '#000000' && gifBar.button.colors.icon === '#ffffff', 'gif icon matches the bar');
   assert(
     gifBar.anchor.selector === 'ul.votingWrap > li:has(#favoriteGifButton)' &&
       gifBar.anchor.insert === 'afterend',
