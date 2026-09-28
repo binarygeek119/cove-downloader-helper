@@ -17,7 +17,7 @@ Repository: https://github.com/binarygeek119/cove-downloader-helper
 - Optional bottom-right download bubble on every page (**Show on all pages**) or only on [supported sites](SUPPORTED_SITES.md) (**Show in supported sites**)
 - Optional site-styled download button from a layout file (**Show stylized download button**). See [src/layouts/README.md](src/layouts/README.md) to add a site.
 - Cove **match** API with quality picker and **Video / Audio / Text** type override
-- **Job Queue** tab for live Cove jobs (progress, cancel, history)
+- **Job Queue** beside the page, with live Cove jobs (progress, cancel, history). Right-click the page and choose **Open job queue**. The page stays open and you can keep browsing.
 - Settings in-app: Cove URL, optional PAT, preferred mode, auto-send, queue-all, downloader button on every page
 
 ## Requirements
@@ -57,7 +57,7 @@ Install the community downloaders from the [official extension registry](https:/
 - Toggle **Show on all pages** to show the bottom-right download bubble on every page.
 - Toggle **Show in supported sites** to show that same bubble only on the [supported sites](SUPPORTED_SITES.md).
 - Toggle **Show stylized download button** to place a site-styled button from [`src/layouts`](src/layouts/README.md). The button’s path chooses video, image, or text for that click.
-- Use **Job Queue** to watch and cancel active Cove jobs.
+- Right-click the page and choose **Open job queue** to dock the queue on the right. It keeps listing current jobs while you move to other pages. You can also open it from the Job Queue tab with **Open beside page**.
 
 ## Build / CI
 

@@ -5,7 +5,10 @@
   "manifest_version": 3,
   "homepage_url": "https://github.com/binarygeek119/cove-downloader-helper",
   "minimum_chrome_version": "116",
-  "permissions": ["contextMenus", "storage", "tabs", "scripting", "activeTab"],
+  "permissions": ["contextMenus", "storage", "tabs", "scripting", "activeTab", "sidePanel"],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
   "optional_host_permissions": ["http://*/*", "https://*/*"],
   "background": {
     "service_worker": "background.js"

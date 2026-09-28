@@ -1,5 +1,6 @@
 (() => {
   const params = new URLSearchParams(location.search);
+  if (params.get('side') === '1') document.body.classList.add('side-panel');
   let currentTab = params.get('tab') || 'download';
   let settings = null;
   let pendingUrl = null;
@@ -33,6 +34,7 @@
     queueList: document.getElementById('queue-list'),
     historyList: document.getElementById('history-list'),
     btnRefreshQueue: document.getElementById('btn-refresh-queue'),
+    btnOpenSideQueue: document.getElementById('btn-open-side-queue'),
     openCoveLink: document.getElementById('open-cove-link'),
     settingsForm: document.getElementById('settings-form'),
     settingsSaved: document.getElementById('settings-saved'),
@@ -559,6 +561,18 @@
   els.btnSend.addEventListener('click', sendSelected);
   els.btnGotoQueue.addEventListener('click', () => setTab('queue'));
   els.btnRefreshQueue.addEventListener('click', refreshQueue);
+  let helperWindowId = null;
+  chrome.windows.getCurrent((win) => {
+    helperWindowId = win && win.id;
+  });
+  if (els.btnOpenSideQueue) {
+    els.btnOpenSideQueue.addEventListener('click', () => {
+      if (helperWindowId === null) return;
+      chrome.sidePanel.open({ windowId: helperWindowId }).catch((error) => {
+        showStatus(els.queueStatus, error.message || 'Could not open the job queue beside the page.', 'error');
+      });
+    });
+  }
   els.entityOverride.addEventListener('change', () => {
     layoutEntityLock = '';
     if (!pendingUrl && !rawMatches.length) return;
