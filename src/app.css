@@ -125,6 +125,7 @@ a.header-open-cove:hover {
 
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 
@@ -466,19 +467,26 @@ button:disabled {
   color: var(--accent);
 }
 
-.plugin-version {
-  margin: 16px 0 0;
+.about-list {
+  margin: 0;
+}
+
+.about-list div {
+  margin: 0 0 14px;
+}
+
+.about-list dt {
   color: var(--muted);
   font-size: 12px;
-  text-align: left;
 }
 
-.plugin-version + .plugin-version {
-  margin-top: 4px;
+.about-list dd {
+  margin: 2px 0 0;
 }
 
-.plugin-version a {
+.about-list a {
   color: var(--accent);
+  overflow-wrap: anywhere;
 }
 
 .history-block {
