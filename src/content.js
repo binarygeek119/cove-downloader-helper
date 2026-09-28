@@ -30,6 +30,7 @@
       justify-content: center;
       box-sizing: border-box;
       margin: 0;
+      appearance: none;
       border-style: solid;
       border-width: 1px;
       background: var(--cove-bg);
@@ -294,8 +295,12 @@
     hoverLink = null;
   }
 
-  function layoutColor(value) {
-    return typeof value === 'string' && LAYOUT_HEX.test(value) ? value : '';
+  function layoutColor(value, allowClear) {
+    if (typeof value !== 'string') return '';
+    const color = value.trim();
+    if (LAYOUT_HEX.test(color)) return color;
+    if (allowClear && color.toLowerCase() === 'transparent') return 'transparent';
+    return '';
   }
 
   function findLayoutHost(id) {
@@ -367,11 +372,11 @@
   function createLayoutButton(target) {
     const buttonSpec = target && target.button;
     const colors = buttonSpec && buttonSpec.colors;
-    const background = layoutColor(colors && colors.background);
-    const text = layoutColor(colors && colors.text);
-    const icon = layoutColor(colors && colors.icon);
-    const border = layoutColor(colors && colors.border);
-    const hover = layoutColor(colors && colors.hoverBackground);
+    const background = layoutColor(colors && colors.background, true);
+    const text = layoutColor(colors && colors.text, false);
+    const icon = layoutColor(colors && colors.icon, false);
+    const border = layoutColor(colors && colors.border, true);
+    const hover = layoutColor(colors && colors.hoverBackground, true);
     const size = buttonSpec && buttonSpec.size;
     const shape = buttonSpec && buttonSpec.shape;
     const label = buttonSpec && typeof buttonSpec.label === 'string' ? buttonSpec.label.trim() : '';

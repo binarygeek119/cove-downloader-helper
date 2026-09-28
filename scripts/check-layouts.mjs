@@ -134,6 +134,21 @@ function runSelfTests() {
   const missingPath = structuredClone(sample);
   delete missingPath.targets[0].path;
   assert(validateLayout(missingPath).some((error) => error.includes('path')), 'path is required');
+
+  const clear = structuredClone(sample);
+  clear.targets[0].button.colors.background = 'transparent';
+  clear.targets[0].button.colors.border = 'Transparent';
+  clear.targets[0].button.colors.hoverBackground = 'transparent';
+  assert(validateLayout(clear).length === 0, 'backing colors may be transparent');
+  const cleared = matchLayoutTargets(
+    [clear],
+    'https://www.pornhub.com/view_video.php?viewkey=63e69d5ec09f3'
+  );
+  assert(cleared[0].button.colors.background === 'transparent', 'transparent background is kept');
+  assert(cleared[0].button.colors.border === 'transparent', 'transparent border is normalized');
+  assert(cleared[0].button.colors.icon === '#ffffff', 'icon color stays');
+  clear.targets[0].button.colors.icon = 'transparent';
+  assert(validateLayout(clear).some((error) => error.includes('icon')), 'icon cannot be transparent');
 }
 
 function checkFiles() {

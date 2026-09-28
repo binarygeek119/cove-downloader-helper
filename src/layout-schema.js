@@ -6,7 +6,23 @@ const LAYOUT_SIZES = ['small', 'medium', 'large'];
 const LAYOUT_SHAPES = ['square', 'rounded', 'pill'];
 const LAYOUT_INSERTS = ['beforebegin', 'afterbegin', 'beforeend', 'afterend'];
 const LAYOUT_COLOR_KEYS = ['background', 'text', 'icon', 'border', 'hoverBackground'];
+const LAYOUT_CLEAR_COLOR_KEYS = ['background', 'border', 'hoverBackground'];
 const LAYOUT_HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+function isLayoutColor(key, value) {
+  if (typeof value !== 'string') return false;
+  const color = value.trim();
+  if (LAYOUT_HEX_COLOR.test(color)) return true;
+  return LAYOUT_CLEAR_COLOR_KEYS.indexOf(key) !== -1 && color.toLowerCase() === 'transparent';
+}
+
+function normalizeLayoutColor(key, value) {
+  const color = String(value).trim();
+  if (LAYOUT_CLEAR_COLOR_KEYS.indexOf(key) !== -1 && color.toLowerCase() === 'transparent') {
+    return 'transparent';
+  }
+  return color;
+}
 
 function layoutKindEntity(kind) {
   if (kind === 'video') return 'Video';
@@ -254,8 +270,11 @@ function validateLayout(data) {
       return;
     }
     LAYOUT_COLOR_KEYS.forEach((key) => {
-      if (typeof colors[key] !== 'string' || !LAYOUT_HEX_COLOR.test(colors[key])) {
-        errors.push(`${where}.button.colors.${key} must be #rgb or #rrggbb`);
+      if (!isLayoutColor(key, colors[key])) {
+        const allowed = LAYOUT_CLEAR_COLOR_KEYS.indexOf(key) === -1
+          ? '#rgb or #rrggbb'
+          : '#rgb, #rrggbb, or transparent';
+        errors.push(`${where}.button.colors.${key} must be ${allowed}`);
       }
     });
   });
@@ -289,11 +308,11 @@ function sanitizeLayoutTarget(target) {
       label: target.button.label.trim(),
       shape: target.button.shape,
       colors: {
-        background: colors.background,
-        text: colors.text,
-        icon: colors.icon,
-        border: colors.border,
-        hoverBackground: colors.hoverBackground,
+        background: normalizeLayoutColor('background', colors.background),
+        text: normalizeLayoutColor('text', colors.text),
+        icon: normalizeLayoutColor('icon', colors.icon),
+        border: normalizeLayoutColor('border', colors.border),
+        hoverBackground: normalizeLayoutColor('hoverBackground', colors.hoverBackground),
       },
     },
   };
