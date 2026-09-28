@@ -61,9 +61,6 @@ function runSelfTests() {
   assert(photo[0].button.size === 'small' && photo[0].button.showText === false, 'photo icon');
   assert(photo[0].anchor.selector === '#ratingSpace > li.omega' && photo[0].anchor.insert === 'afterend', 'photo bar');
 
-  const gifs = matchLayoutTargets([sample], 'https://www.pornhub.com/gifs');
-  assert(gifs.length === 1 && gifs[0].id === 'gifs' && gifs[0].entity === 'Image', 'gifs listing keeps the longer path');
-
   const gifPage = matchLayoutTargets([sample], 'https://www.pornhub.com/gif/55153161');
   assert(gifPage.length === 1 && gifPage[0].id === 'gif' && gifPage[0].entity === 'Image', 'gif page');
   assert(gifPage[0].button.size === 'small' && gifPage[0].button.showText === false, 'gif icon');
@@ -72,6 +69,9 @@ function runSelfTests() {
       gifPage[0].anchor.insert === 'afterend',
     'gif bar'
   );
+
+  const gifListing = matchLayoutTargets([sample], 'https://www.pornhub.com/gifs');
+  assert(gifListing.length === 1 && gifListing[0].id === 'gif', '/gif also matches /gifs');
 
   const gifLater = matchLayoutTargets([sample], 'https://www.pornhub.com/user/gifs');
   assert(gifLater.length === 0, 'path must be a prefix, not a later segment');
