@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "hosts": ["xhamster.com"],
+  "targets": [
+    {
+      "id": "watch",
+      "kind": "video",
+      "path": "/videos/",
+      "anchor": {
+        "selector": ".controls .report-control, .controls [data-role=\"report-button\"]",
+        "insert": "afterend"
+      },
+      "button": {
+        "size": "medium",
+        "showText": true,
+        "label": "Download",
+        "shape": "rounded",
+        "colors": {
+          "background": "#333333",
+          "text": "#dadada",
+          "icon": "#dadada",
+          "border": "#333333",
+          "hoverBackground": "#484848"
+        }
+      }
+    }
+  ]
+}
