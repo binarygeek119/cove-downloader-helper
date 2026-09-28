@@ -359,7 +359,10 @@ chrome.action.onClicked.addListener((tab) => {
 
 chrome.contextMenus.onClicked.addListener((item, tab) => {
   if (item.menuItemId === MENU_QUEUE_ID || item.menuItemId === MENU_QUEUE_ACTION_ID) {
+    // Both calls stay in this click turn. The panel needs the gesture, and
+    // site access lets the video list keep working after the page changes.
     openJobQueue(tab && tab.windowId);
+    void requestBroadHostPermission();
     return;
   }
   const run = async () => {
@@ -380,6 +383,86 @@ chrome.contextMenus.onClicked.addListener((item, tab) => {
   };
   void run();
 });
+
+const DIRECT_MEDIA_EXT = /\.(?:mp4|m4v|webm|mov|m3u8|mpd|mkv|ogv|ogg|flv)(?:$|[?#])/i;
+
+function isDirectMediaUrl(url) {
+  try {
+    return DIRECT_MEDIA_EXT.test(new URL(url).pathname);
+  } catch (_) {
+    return false;
+  }
+}
+
+// yt-dlp reads a referer smuggled in the URL fragment. Direct file hosts
+// such as Erome reject the download unless that referer is the page.
+function videoUrlForCove(mediaUrl, pageUrl) {
+  if (!isDirectMediaUrl(mediaUrl) || !isHttpUrl(pageUrl)) return mediaUrl;
+  try {
+    const media = new URL(mediaUrl);
+    const page = new URL(pageUrl);
+    if (media.href === page.href) return mediaUrl;
+    const payload = encodeURIComponent(JSON.stringify({ referer: page.href }));
+    return media.href + '#__youtubedl_smuggle=' + payload;
+  } catch (_) {
+    return mediaUrl;
+  }
+}
+
+async function collectPageVideos(tabId) {
+  if (!tabId) return { videos: [], pageUrl: '' };
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: ['page-videos.js'],
+  });
+  const [injected] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: () => (globalThis.coveCollectPageVideos ? globalThis.coveCollectPageVideos() : { videos: [] }),
+  });
+  const result = injected && injected.result;
+  if (Array.isArray(result)) return { videos: result, pageUrl: '' };
+  const videos = result && Array.isArray(result.videos) ? result.videos : [];
+  return {
+    videos,
+    pageUrl: (result && result.pageUrl) || '',
+    unchanged: !!(result && result.unchanged),
+    count: result && result.count,
+  };
+}
+
+async function downloadPageVideos(urls, pageUrl) {
+  const granted = await requestBroadHostPermission();
+  if (!granted) {
+    throw new Error('Site access permission is required to talk to Cove.');
+  }
+  const settings = await getSettings();
+  if (!settings.coveUrl) {
+    await openAppWindow('?tab=settings');
+    return { openedSettings: true, started: 0 };
+  }
+  const list = (Array.isArray(urls) ? urls : []).filter((url) => isHttpUrl(url));
+  const referer = isHttpUrl(pageUrl) ? pageUrl : '';
+  let started = 0;
+  let failed = 0;
+  let error = '';
+  for (const url of list) {
+    try {
+      if (isDirectMediaUrl(url)) {
+        const match = ytDlpFallback(videoUrlForCove(url, referer), 'Video');
+        if (referer) match.sourceUrl = referer;
+        await startDownload(settings, buildDownloadPayload(match, settings));
+      } else {
+        await startVideoDownload(settings, url);
+      }
+      started += 1;
+    } catch (downloadError) {
+      failed += 1;
+      if (!error) error = downloadError.message || String(downloadError);
+    }
+  }
+  if (!started && error) throw new Error(error);
+  return { started, failed, error };
+}
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
@@ -422,6 +505,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       const targets = matchLayoutTargets(await loadSiteLayouts(), pageUrl);
       sendResponse({ ok: true, targets });
+      return;
+    }
+
+    if (message.type === 'collect-page-videos') {
+      try {
+        const result = await collectPageVideos(message.tabId);
+        sendResponse({ ok: true, ...result });
+      } catch (error) {
+        sendResponse({ ok: false, error: error.message || String(error), videos: [] });
+      }
+      return;
+    }
+
+    if (message.type === 'download-page-videos') {
+      try {
+        const result = await downloadPageVideos(message.urls, message.pageUrl);
+        sendResponse({ ok: true, ...result });
+      } catch (error) {
+        sendResponse({ ok: false, error: error.message || String(error) });
+      }
       return;
     }
 

@@ -14,14 +14,28 @@
   const CLEARED_HISTORY_KEY = 'coveHelperClearedJobHistory';
   const CLEARED_HISTORY_LIMIT = 200;
   let clearedHistoryIds = [];
+  let pageVideos = [];
+  let pageVideoUrl = '';
+  let videoSignature = '';
+  let videoChecked = new Map();
+  let videoTimer = null;
+  let videoRequest = 0;
 
   const els = {
     tabs: [...document.querySelectorAll('.tab')],
     panels: {
       download: document.getElementById('panel-download'),
+      videos: document.getElementById('panel-videos'),
       queue: document.getElementById('panel-queue'),
       settings: document.getElementById('panel-settings'),
     },
+    tabVideos: document.querySelector('.tab[data-tab="videos"]'),
+    videosHeading: document.getElementById('videos-heading'),
+    videoList: document.getElementById('video-list'),
+    videosStatus: document.getElementById('videos-status'),
+    videosSelectAll: document.getElementById('videos-select-all'),
+    btnDownloadVideos: document.getElementById('btn-download-videos'),
+    btnDownloadAllVideos: document.getElementById('btn-download-all-videos'),
     downloadUrl: document.getElementById('download-url'),
     entityOverride: document.getElementById('entityOverride'),
     downloadStatus: document.getElementById('download-status'),
@@ -85,6 +99,202 @@
       startQueuePolling();
     } else {
       stopQueuePolling();
+    }
+  }
+
+  function selectedVideoUrls() {
+    if (!els.videoList) return [];
+    return [...els.videoList.querySelectorAll('input[type="checkbox"][data-url]')]
+      .filter((input) => input.checked)
+      .map((input) => input.dataset.url);
+  }
+
+  function renderVideoList() {
+    if (!els.videoList) return;
+    if (els.videosHeading) {
+      const count = pageVideos.length;
+      els.videosHeading.textContent = count
+        ? count + ' video' + (count === 1 ? '' : 's') + ' on this page'
+        : 'Videos on this page';
+    }
+    if (els.tabVideos) {
+      els.tabVideos.textContent = pageVideos.length ? 'Videos (' + pageVideos.length + ')' : 'Videos';
+    }
+    els.videoList.replaceChildren();
+    pageVideos.forEach((video) => {
+      const row = document.createElement('label');
+      row.className = 'video-pick';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.dataset.url = video.url;
+      input.checked = videoChecked.has(video.url) ? videoChecked.get(video.url) : true;
+      input.addEventListener('change', () => {
+        videoChecked.set(video.url, input.checked);
+        syncVideoSelectAll();
+      });
+      const thumb = document.createElement('span');
+      thumb.className = 'video-thumb-wrap';
+      if (video.thumbnail) {
+        const img = document.createElement('img');
+        img.className = 'video-thumb';
+        img.alt = '';
+        img.referrerPolicy = 'no-referrer';
+        img.src = video.thumbnail;
+        img.addEventListener('error', () => {
+          img.remove();
+        });
+        thumb.appendChild(img);
+      }
+      if (video.duration) {
+        const badge = document.createElement('span');
+        badge.className = 'video-duration';
+        badge.textContent = video.duration;
+        thumb.appendChild(badge);
+      }
+      const copy = document.createElement('span');
+      copy.className = 'video-copy';
+      const title = document.createElement('div');
+      title.className = 'job-title';
+      title.textContent = video.title || video.url;
+      copy.appendChild(title);
+      row.append(input, thumb, copy);
+      els.videoList.appendChild(row);
+    });
+    syncVideoSelectAll();
+  }
+
+  function syncVideoSelectAll() {
+    if (!els.videosSelectAll || !els.videoList) return;
+    const boxes = [...els.videoList.querySelectorAll('input[type="checkbox"][data-url]')];
+    const checkedCount = boxes.filter((input) => input.checked).length;
+    els.videosSelectAll.checked = boxes.length > 0 && checkedCount === boxes.length;
+    els.videosSelectAll.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
+    if (els.btnDownloadVideos) els.btnDownloadVideos.disabled = checkedCount === 0;
+  }
+
+  function setVideoChecks(checked) {
+    pageVideos.forEach((video) => videoChecked.set(video.url, checked));
+    if (!els.videoList) return;
+    els.videoList.querySelectorAll('input[type="checkbox"][data-url]').forEach((input) => {
+      input.checked = checked;
+    });
+    syncVideoSelectAll();
+  }
+
+  async function refreshPageVideos() {
+    const request = ++videoRequest;
+    if (!els.tabVideos || !document.body.classList.contains('side-panel')) {
+      showVideoTab(false);
+      return;
+    }
+    let tab = null;
+    try {
+      const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (active && active.url && /^https?:/i.test(active.url)) tab = active;
+    } catch (_) {
+      tab = null;
+    }
+    if (!tab || !tab.id) {
+      showVideoTab(false);
+      return;
+    }
+    let response = null;
+    try {
+      response = await chrome.runtime.sendMessage({ type: 'collect-page-videos', tabId: tab.id });
+    } catch (_) {
+      response = null;
+    }
+    if (request !== videoRequest) return;
+    if (!response || response.ok === false) {
+      showVideoTab(false);
+      return;
+    }
+    const nextPage = response.pageUrl || tab.url || '';
+    if (nextPage !== pageVideoUrl) {
+      pageVideoUrl = nextPage;
+      videoChecked = new Map();
+      videoSignature = '';
+      pageVideos = [];
+    }
+    if (response.unchanged && pageVideos.length > 1) {
+      showVideoTab(true);
+      return;
+    }
+    const videos = Array.isArray(response.videos) ? response.videos : [];
+    const show = videos.length > 1;
+    showVideoTab(show);
+    if (!show) {
+      pageVideos = [];
+      videoSignature = '';
+      if (els.videoList) els.videoList.replaceChildren();
+      if (els.tabVideos) els.tabVideos.textContent = 'Videos';
+      return;
+    }
+    const signature = videos.map((video) => [video.url, video.duration, video.title].join('|')).join('\n');
+    pageVideos = videos;
+    if (signature !== videoSignature) {
+      videoSignature = signature;
+      renderVideoList();
+    }
+  }
+
+  function showVideoTab(show) {
+    if (!els.tabVideos) return;
+    const visible = show && document.body.classList.contains('side-panel');
+    els.tabVideos.hidden = !visible;
+    if (!visible && currentTab === 'videos') {
+      setTab('queue');
+    }
+  }
+
+  function startVideoPolling() {
+    if (!document.body.classList.contains('side-panel')) {
+      showVideoTab(false);
+      return;
+    }
+    refreshPageVideos();
+    if (videoTimer) clearInterval(videoTimer);
+    videoTimer = setInterval(refreshPageVideos, 2000);
+    chrome.tabs.onActivated.addListener(() => {
+      refreshPageVideos();
+    });
+    chrome.tabs.onUpdated.addListener((_tabId, info) => {
+      if (info.status === 'complete' || info.url) refreshPageVideos();
+    });
+  }
+
+  async function sendPageVideos(urls) {
+    if (!urls.length) {
+      showStatus(els.videosStatus, 'Select at least one video.', 'error');
+      return;
+    }
+    if (els.btnDownloadVideos) els.btnDownloadVideos.disabled = true;
+    if (els.btnDownloadAllVideos) els.btnDownloadAllVideos.disabled = true;
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'download-page-videos',
+        urls,
+        pageUrl: pageVideoUrl,
+      });
+      if (!response || response.ok === false) {
+        showStatus(els.videosStatus, (response && response.error) || 'Could not send the videos.', 'error');
+        return;
+      }
+      if (response.openedSettings) {
+        showStatus(els.videosStatus, 'Open Settings to configure Cove URL.', 'error');
+        return;
+      }
+      const failed = response.failed ? ` ${response.failed} failed.` : '';
+      showStatus(
+        els.videosStatus,
+        `Sent ${response.started} video${response.started === 1 ? '' : 's'} to Cove.${failed}`,
+        response.failed ? 'error' : 'ok'
+      );
+    } catch (error) {
+      showStatus(els.videosStatus, error.message || String(error), 'error');
+    } finally {
+      if (els.btnDownloadAllVideos) els.btnDownloadAllVideos.disabled = false;
+      syncVideoSelectAll();
     }
   }
 
@@ -618,6 +828,22 @@
     button.addEventListener('click', () => setTab(button.dataset.tab));
   });
 
+  if (els.videosSelectAll) {
+    els.videosSelectAll.addEventListener('change', () => {
+      setVideoChecks(els.videosSelectAll.checked);
+    });
+  }
+  if (els.btnDownloadVideos) {
+    els.btnDownloadVideos.addEventListener('click', () => {
+      sendPageVideos(selectedVideoUrls());
+    });
+  }
+  if (els.btnDownloadAllVideos) {
+    els.btnDownloadAllVideos.addEventListener('click', () => {
+      sendPageVideos(pageVideos.map((video) => video.url));
+    });
+  }
+
   els.settingsForm.addEventListener('submit', saveSettings);
   els.btnTestCove.addEventListener('click', () => {
     testCoveConnection().catch((error) => {
@@ -654,6 +880,7 @@
   if (els.btnOpenSideQueue) {
     els.btnOpenSideQueue.addEventListener('click', () => {
       if (helperWindowId === null) return;
+      void chrome.permissions.request({ origins: ['http://*/*', 'https://*/*'] });
       chrome.sidePanel.open({ windowId: helperWindowId }).catch((error) => {
         showStatus(els.queueStatus, error.message || 'Could not open the job queue beside the page.', 'error');
       });
@@ -720,7 +947,8 @@
       showStatus(els.downloadStatus, errorParam, 'error');
     }
 
-    setTab(['download', 'queue', 'settings'].includes(currentTab) ? currentTab : 'download');
+    setTab(['download', 'videos', 'queue', 'settings'].includes(currentTab) ? currentTab : 'download');
+    startVideoPolling();
 
     const session = await sessionGet([PENDING_KEY]);
     const pending = session[PENDING_KEY];

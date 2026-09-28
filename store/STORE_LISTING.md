@@ -57,6 +57,7 @@ Features:
 • Optional bottom-right download bubble on every page, or only on supported sites (Settings)
 • Match results with quality picker and Video / Audio / Text override
 • Live job queue for downloads you start from the helper
+• When a page has more than one video, the side panel lists each one (thumbnail, title, and length) so you can download the ones you pick
 • Works with your Cove URL and optional personal access token
 
 Requirements:
@@ -94,16 +95,16 @@ https://github.com/binarygeek119/cove-downloader-helper/blob/master/PRIVACY.md
 | Permission | Justification |
 | --- | --- |
 | `storage` | Save Cove URL, optional API token, and user preferences. |
-| `tabs` | Read the active tab URL when the user clicks the toolbar icon or uses page context actions; open the helper UI tab. |
+| `tabs` | Read the active tab URL when the user clicks the toolbar icon or uses page context actions; open the helper UI tab. While the side panel is open, read the active tab so a page with more than one video can show the video picker. |
 | `activeTab` | Temporary access to the tab the user invokes the extension on. |
 | `contextMenus` | “Send link/page to Cove” items in the right-click menu. |
-| `scripting` | Inject the optional downloader button on every page only when the user enables Show on all pages and grants site access. |
-| Host access `http://*/*`, `https://*/*` (optional) | Call the user-configured Cove origin (any host/port they choose, including LAN/localhost) and, when Show on all pages is enabled, inject the downloader button on every site. Requested at runtime, not granted until the user approves. |
+| `scripting` | Inject the optional downloader button on every page only when the user enables Show on all pages and grants site access. While the side panel is open, read video entries on the active page so the user can pick which ones to send. |
+| Host access `http://*/*`, `https://*/*` (optional) | Call the user-configured Cove origin (any host/port they choose, including LAN/localhost) and, when Show on all pages is enabled, inject the downloader button on every site. Also read the active page’s videos for the side-panel picker. Requested at runtime, not granted until the user approves. |
 
 ### Data disclosure
 
 - Certify: no sale of user data; not used for creditworthiness / lending.
-- Collected / transmitted: Web history is **not** collected broadly. Only URLs the user explicitly sends, plus settings they enter, go to **their** Cove server.
+- Collected / transmitted: Web history is **not** collected broadly. Only URLs the user explicitly sends, plus settings they enter, go to **their** Cove server. On a page with more than one video, the side panel shows that page’s video title, length, and thumbnail on the device; checked video URLs are sent to the user’s Cove server when they click Download.
 - Personally identifiable information: optional API token stored locally in extension storage; not sent to the developer.
 
 ## Distribution
