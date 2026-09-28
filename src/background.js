@@ -48,6 +48,29 @@ function openJobQueue(windowId) {
   });
 }
 
+// sidePanel.open has to run in the click turn, before any await. These flags
+// are refreshed from storage so that call can stay synchronous.
+let openQueueOnDownload = false;
+let autoSendDownloads = false;
+let coveUrlConfigured = false;
+
+function rememberQueueGestureSettings(data) {
+  const source = data || {};
+  openQueueOnDownload = !!source.openQueueOnDownload;
+  autoSendDownloads = !!source.autoSend;
+  coveUrlConfigured = !!normalizeCoveUrl(source.coveUrl || '');
+}
+
+function loadQueueGestureSettings() {
+  chrome.storage.sync.get(['openQueueOnDownload', 'autoSend', 'coveUrl'], rememberQueueGestureSettings);
+}
+
+function openJobQueueForDownload(windowId) {
+  if (!openQueueOnDownload || !coveUrlConfigured) return;
+  openJobQueue(windowId);
+  chrome.runtime.sendMessage({ type: 'show-job-queue' }).catch(() => {});
+}
+
 function applyToolbarIcon() {
   chrome.action.setIcon({
     path: {
@@ -176,6 +199,7 @@ chrome.runtime.onStartup.addListener(() => {
 enableJobQueuePanel();
 
 applyToolbarIcon();
+loadQueueGestureSettings();
 syncInPageContentScript().catch(() => {});
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
@@ -192,6 +216,11 @@ chrome.storage.onChanged.addListener((changes, area) => {
     changes.coveUrl
   ) {
     syncInPageContentScript().catch(() => {});
+  }
+  if (changes.openQueueOnDownload || changes.autoSend || changes.coveUrl) {
+    if (changes.openQueueOnDownload) openQueueOnDownload = !!changes.openQueueOnDownload.newValue;
+    if (changes.autoSend) autoSendDownloads = !!changes.autoSend.newValue;
+    if (changes.coveUrl) coveUrlConfigured = !!normalizeCoveUrl(changes.coveUrl.newValue || '');
   }
 });
 
@@ -364,6 +393,7 @@ async function beginSendToCove(url, tab, placement) {
 
 chrome.action.onClicked.addListener((tab) => {
   const url = tab && tab.url;
+  if (url && isHttpUrl(url) && autoSendDownloads) openJobQueueForDownload(tab && tab.windowId);
   const run = async () => {
     try {
       if (!url || !isHttpUrl(url)) {
@@ -389,14 +419,15 @@ chrome.contextMenus.onClicked.addListener((item, tab) => {
     void requestBroadHostPermission();
     return;
   }
+  let url = null;
+  if (item.menuItemId === MENU_LINK_ID) {
+    url = item.linkUrl;
+  } else if (item.menuItemId === MENU_PAGE_ID) {
+    url = tab && tab.url;
+  }
+  if (url && isHttpUrl(url) && autoSendDownloads) openJobQueueForDownload(tab && tab.windowId);
   const run = async () => {
     try {
-      let url = null;
-      if (item.menuItemId === MENU_LINK_ID) {
-        url = item.linkUrl;
-      } else if (item.menuItemId === MENU_PAGE_ID) {
-        url = tab && tab.url;
-      }
       if (!url) return;
       await beginSendToCove(url, tab);
     } catch (error) {
@@ -647,6 +678,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       if (message.type === 'download-page-videos') {
+        const videoUrls = Array.isArray(message.urls) ? message.urls.filter((url) => isHttpUrl(url)) : [];
+        if (videoUrls.length) openJobQueueForDownload(sender.tab && sender.tab.windowId);
         try {
           const result = await downloadPageVideos(message.urls, message.pageUrl);
           sendResponse({ ok: true, ...result });
@@ -657,6 +690,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       if (message.type === 'send-to-cove') {
+        if ((message.entity === 'Video' || autoSendDownloads) && isHttpUrl(message.url)) {
+          openJobQueueForDownload(sender.tab && sender.tab.windowId);
+        }
         try {
           const result = await beginSendToCove(message.url, sender.tab, { entity: message.entity });
           sendResponse({ ok: true, ...result });

@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
   showOnSupportedSites: false,
   showStylizedDownloadButton: false,
   autoSend: false,
+  openQueueOnDownload: false,
   queueAllMatches: false,
   autoApplyMetadata: true,
 };
@@ -59,6 +60,7 @@ async function getSettings() {
     showOnSupportedSites: !!data.showOnSupportedSites,
     showStylizedDownloadButton: !!data.showStylizedDownloadButton,
     autoSend: !!data.autoSend,
+    openQueueOnDownload: !!data.openQueueOnDownload,
     queueAllMatches: !!data.queueAllMatches,
     autoApplyMetadata:
       data.autoApplyMetadata === undefined

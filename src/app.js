@@ -64,6 +64,7 @@
     showOnSupportedSites: document.getElementById('showOnSupportedSites'),
     showStylizedDownloadButton: document.getElementById('showStylizedDownloadButton'),
     autoSend: document.getElementById('autoSend'),
+    openQueueOnDownload: document.getElementById('openQueueOnDownload'),
     queueAllMatches: document.getElementById('queueAllMatches'),
     autoApplyMetadata: document.getElementById('autoApplyMetadata'),
   };
@@ -263,11 +264,24 @@
     });
   }
 
+  function openJobQueueForDownload() {
+    if (!settings || !settings.openQueueOnDownload || !settings.coveUrl) return;
+    if (document.body.classList.contains('side-panel')) {
+      setTab('queue');
+      return;
+    }
+    if (helperWindowId === null || helperWindowId === undefined) return;
+    chrome.sidePanel.open({ windowId: helperWindowId }).catch(() => {});
+    // Opening an already-visible panel does not change its tab.
+    chrome.runtime.sendMessage({ type: 'show-job-queue' }).catch(() => {});
+  }
+
   async function sendPageVideos(urls) {
     if (!urls.length) {
       showStatus(els.videosStatus, 'Select at least one video.', 'error');
       return;
     }
+    openJobQueueForDownload();
     if (els.btnDownloadVideos) els.btnDownloadVideos.disabled = true;
     if (els.btnDownloadAllVideos) els.btnDownloadAllVideos.disabled = true;
     try {
@@ -306,6 +320,7 @@
     els.showOnSupportedSites.checked = !!data.showOnSupportedSites;
     els.showStylizedDownloadButton.checked = !!data.showStylizedDownloadButton;
     els.autoSend.checked = !!data.autoSend;
+    els.openQueueOnDownload.checked = !!data.openQueueOnDownload;
     els.queueAllMatches.checked = !!data.queueAllMatches;
     els.autoApplyMetadata.checked = !!data.autoApplyMetadata;
     setOpenCoveButton(data.coveUrl);
@@ -345,6 +360,7 @@
       showOnSupportedSites: els.showOnSupportedSites.checked,
       showStylizedDownloadButton: els.showStylizedDownloadButton.checked,
       autoSend: els.autoSend.checked,
+      openQueueOnDownload: els.openQueueOnDownload.checked,
       queueAllMatches: els.queueAllMatches.checked,
       autoApplyMetadata: els.autoApplyMetadata.checked,
     };
@@ -632,6 +648,7 @@
       showStatus(els.downloadStatus, 'Select at least one match to send.', 'error');
       return;
     }
+    openJobQueueForDownload();
 
     els.btnSend.disabled = true;
     const jobIds = [];
@@ -828,6 +845,12 @@
     button.addEventListener('click', () => setTab(button.dataset.tab));
   });
 
+  chrome.runtime.onMessage.addListener((message) => {
+    if (!message || message.type !== 'show-job-queue') return;
+    if (!document.body.classList.contains('side-panel')) return;
+    setTab('queue');
+  });
+
   if (els.videosSelectAll) {
     els.videosSelectAll.addEventListener('change', () => {
       setVideoChecks(els.videosSelectAll.checked);
@@ -912,6 +935,11 @@
   });
 
   chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'sync' && settings) {
+      if (changes.openQueueOnDownload) settings.openQueueOnDownload = !!changes.openQueueOnDownload.newValue;
+      if (changes.autoSend) settings.autoSend = !!changes.autoSend.newValue;
+      if (changes.coveUrl) settings.coveUrl = normalizeCoveUrl(changes.coveUrl.newValue || '');
+    }
     if (area !== 'local' || !changes[CLEARED_HISTORY_KEY]) return;
     const ids = changes[CLEARED_HISTORY_KEY].newValue;
     const next = Array.isArray(ids) ? ids.map((id) => String(id)) : [];
