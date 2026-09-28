@@ -65,10 +65,15 @@ function loadQueueGestureSettings() {
   chrome.storage.sync.get(['openQueueOnDownload', 'autoSend', 'coveUrl'], rememberQueueGestureSettings);
 }
 
+function notifyJobQueue() {
+  if (!coveUrlConfigured) return;
+  chrome.runtime.sendMessage({ type: 'show-job-queue' }).catch(() => {});
+}
+
 function openJobQueueForDownload(windowId) {
   if (!openQueueOnDownload || !coveUrlConfigured) return;
   openJobQueue(windowId);
-  chrome.runtime.sendMessage({ type: 'show-job-queue' }).catch(() => {});
+  notifyJobQueue();
 }
 
 function applyToolbarIcon() {
@@ -475,7 +480,7 @@ chrome.action.onClicked.addListener((tab) => {
   // The pinned icon opens the job queue. Both calls stay in this click turn:
   // the panel needs the gesture, and site access lets the video list keep working.
   openJobQueue(tab && tab.windowId);
-  chrome.runtime.sendMessage({ type: 'show-job-queue' }).catch(() => {});
+  notifyJobQueue();
   void requestBroadHostPermission();
 });
 
