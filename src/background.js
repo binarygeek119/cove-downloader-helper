@@ -51,10 +51,33 @@ function requestBroadHostPermission() {
   });
 }
 
+async function injectDownloaderButtonIntoOpenTabs() {
+  let tabs = [];
+  try {
+    tabs = await chrome.tabs.query({ url: HOST_ORIGINS });
+  } catch (_) {
+    return;
+  }
+
+  await Promise.all(
+    tabs.map(async (tab) => {
+      if (!tab.id || tab.discarded) return;
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id, allFrames: false },
+          files: ['content.js'],
+        });
+      } catch (_) {
+        // Restricted, prerendered, or closed tabs cannot take the button.
+      }
+    })
+  );
+}
+
 async function syncInPageContentScript() {
   const settings = await getSettings();
   const allowed = await hasBroadHostPermission();
-  const want = !!settings.showInPageButtons && allowed;
+  const want = (!!settings.showInPageButtons || !!settings.showOnSupportedSites) && allowed;
 
   const existing = await chrome.scripting.getRegisteredContentScripts({
     ids: [CONTENT_SCRIPT_ID],
@@ -73,6 +96,12 @@ async function syncInPageContentScript() {
     ]);
   } else if (!want && registered) {
     await chrome.scripting.unregisterContentScripts({ ids: [CONTENT_SCRIPT_ID] });
+  }
+
+  // Registered scripts only run on later navigations. Inject now so every
+  // open http(s) page gets the downloader button immediately.
+  if (want) {
+    await injectDownloaderButtonIntoOpenTabs();
   }
 }
 
@@ -93,7 +122,7 @@ syncInPageContentScript().catch(() => {});
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'sync') return;
-  if (changes.showInPageButtons || changes.coveUrl) {
+  if (changes.showInPageButtons || changes.showOnSupportedSites || changes.coveUrl) {
     syncInPageContentScript().catch(() => {});
   }
 });
@@ -229,7 +258,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     if (message.type === 'get-settings') {
-      sendResponse({ ok: true, settings: await getSettings() });
+      const settings = await getSettings();
+      const extraHosts = await getExtraSupportedHosts(settings);
+      settings.supportedHosts = SUPPORTED_SITE_HOSTS.concat(extraHosts);
+      sendResponse({ ok: true, settings });
       return;
     }
 

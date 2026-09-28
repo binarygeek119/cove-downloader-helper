@@ -18,11 +18,17 @@ Upload:
 
 ## Automatic updates
 
-Pushes to `master` run `.github/workflows/pack-and-release.yml`. After the GitHub Release is updated, `scripts/publish-chrome-webstore.sh` uploads the zip when `src/manifest.json` `version` is newer than the store item `okmkahgbcigkpmaagpddnadpffjpibgm`, then submits that version for review.
+Pushes to `master` run `.github/workflows/pack-and-release.yml`. After the GitHub Release is updated, `scripts/publish-chrome-webstore.sh` uploads the zip when `src/manifest.json` `version` is newer than the store item `okmkahgbcigkpmaagpddnadpffjpibgm`, then submits that version for review. A manual run can turn off **Publish a newer package to the Chrome Web Store**.
 
-Repository secrets: `CHROME_WEBSTORE_CLIENT_ID`, `CHROME_WEBSTORE_CLIENT_SECRET`, `CHROME_WEBSTORE_REFRESH_TOKEN`, and `CHROME_PUBLISHER_ID`. The job waits until those are set.
+| Secret | Value |
+| --- | --- |
+| `CHROME_WEBSTORE_CLIENT_ID` | OAuth client ID |
+| `CHROME_WEBSTORE_CLIENT_SECRET` | OAuth client secret |
+| `CHROME_WEBSTORE_REFRESH_TOKEN` | Refresh token for scope `https://www.googleapis.com/auth/chromewebstore` |
+| `CHROME_PUBLISHER_ID` | Publisher ID from Developer Dashboard → Publisher → Settings |
+| `CHROME_EXTENSION_ID` | Optional. Defaults to `okmkahgbcigkpmaagpddnadpffjpibgm` |
 
-Mint the refresh token with scope `https://www.googleapis.com/auth/chromewebstore` and call `https://chromewebstore.googleapis.com`. The legacy host `www.googleapis.com/chromewebstore/v1.1` rejects that scope.
+The job skips with a warning until the four required secrets are set. Mint the refresh token with scope `https://www.googleapis.com/auth/chromewebstore` and call `https://chromewebstore.googleapis.com`. The legacy host `www.googleapis.com/chromewebstore/v1.1` rejects that scope. Raise `version` in `src/manifest.json` before each update.
 
 ## Store listing
 
@@ -48,7 +54,7 @@ Send the current page or a link to Cove so registered downloaders (yt-dlp, Commo
 Features:
 • Left-click the toolbar icon to send the current page
 • Right-click a link or page → Send to Cove
-• Optional in-page button and link chip (Settings)
+• Optional bottom-right download bubble on every page, or only on supported sites (Settings)
 • Match results with quality picker and Video / Audio / Text override
 • Live job queue for downloads you start from the helper
 • Works with your Cove URL and optional personal access token
@@ -91,8 +97,8 @@ https://github.com/binarygeek119/cove-downloader-helper/blob/master/PRIVACY.md
 | `tabs` | Read the active tab URL when the user clicks the toolbar icon or uses page context actions; open the helper UI tab. |
 | `activeTab` | Temporary access to the tab the user invokes the extension on. |
 | `contextMenus` | “Send link/page to Cove” items in the right-click menu. |
-| `scripting` | Register optional in-page buttons only when the user enables them and grants site access. |
-| Host access `http://*/*`, `https://*/*` (optional) | Call the user-configured Cove origin (any host/port they choose, including LAN/localhost) and optionally inject in-page controls on sites where the user wants one-click send. Requested at runtime, not granted until the user approves. |
+| `scripting` | Inject the optional downloader button on every page only when the user enables Show on all pages and grants site access. |
+| Host access `http://*/*`, `https://*/*` (optional) | Call the user-configured Cove origin (any host/port they choose, including LAN/localhost) and, when Show on all pages is enabled, inject the downloader button on every site. Requested at runtime, not granted until the user approves. |
 
 ### Data disclosure
 
@@ -111,6 +117,7 @@ https://github.com/binarygeek119/cove-downloader-helper/blob/master/PRIVACY.md
 - [ ] Confirm optional host permission prompt appears on first send / settings save
 - [ ] In-page buttons appear only when enabled + permission granted
 - [ ] Zip built with `./scripts/pack-extension.sh --force`
+- [ ] Store secrets added if GitHub Actions should publish later versions
 - [ ] Privacy policy URL opens publicly
 - [ ] Store icon + at least one 1280×800 screenshot uploaded
 - [ ] Permission justifications pasted into Privacy tab

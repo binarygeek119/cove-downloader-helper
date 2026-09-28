@@ -20,7 +20,7 @@ It may process the following information **on your device** and, when you choose
 | --- | --- | --- |
 | Cove base URL | Chrome sync/local storage on your browser | So the extension can call your Cove API |
 | Optional Cove API token (PAT) | Chrome sync storage on your browser | To authenticate to your Cove instance when auth is enabled |
-| Extension preferences (preferred mode, auto-send, in-page buttons, etc.) | Chrome sync storage | To remember your settings |
+| Extension preferences (preferred mode, auto-send, downloader button on every page, etc.) | Chrome sync storage | To remember your settings |
 | Page / link URLs you explicitly send | Sent only to your configured Cove URL | To start a download / match job in Cove |
 | Temporary pending URL in session storage | Browser session only | To open the helper Download tab for the URL you just selected |
 
@@ -37,10 +37,10 @@ The extension does **not** sell user data, does not use data for advertising, an
 Optional access to `http://*/*` and `https://*/*` is requested so the extension can:
 
 1. Call the Cove API at whatever origin you configure (often a LAN or localhost URL)
-2. Optionally show in-page download controls on websites you visit
+2. Optionally show the bottom-right download bubble on every page you visit, or only on supported sites
 3. Read the page or link URL you choose to send
 
-You can deny site access; core settings still save, but talking to Cove and in-page buttons will not work until permission is granted.
+You can deny site access; core settings still save, but talking to Cove and the downloader button on every page will not work until permission is granted.
 
 ## Third parties
 
