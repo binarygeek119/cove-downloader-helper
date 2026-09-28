@@ -709,6 +709,9 @@
   });
 
   async function init() {
+    const versionEl = document.getElementById('extension-version');
+    if (versionEl) versionEl.textContent = `Version ${chrome.runtime.getManifest().version}`;
+
     await loadSettings();
     await loadClearedHistory();
 
