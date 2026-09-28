@@ -400,6 +400,8 @@
     };
   }
 
+  const HOST_PERMISSION = { origins: ['http://*/*', 'https://*/*'] };
+
   function requestHostPermission() {
     return new Promise((resolve) => {
       chrome.runtime.sendMessage({ type: 'request-host-permission' }, (response) => {
@@ -408,6 +410,34 @@
           return;
         }
         resolve(!!(response && response.ok));
+      });
+    });
+  }
+
+  function containedHostPermission() {
+    return new Promise((resolve) => {
+      chrome.permissions.contains(HOST_PERMISSION, (has) => {
+        resolve(!chrome.runtime.lastError && !!has);
+      });
+    });
+  }
+
+  function importHostPermission() {
+    return new Promise((resolve) => {
+      const result = { has: false, granted: false, pending: 2 };
+      const finish = () => {
+        result.pending -= 1;
+        if (result.pending === 0) resolve(result.has || result.granted);
+      };
+      chrome.permissions.contains(HOST_PERMISSION, (has) => {
+        result.has = !chrome.runtime.lastError && !!has;
+        finish();
+      });
+      // Ask on the Import click, before the file dialog opens. contains still
+      // counts when access is already granted.
+      chrome.permissions.request(HOST_PERMISSION, (granted) => {
+        result.granted = !chrome.runtime.lastError && !!granted;
+        finish();
       });
     });
   }
@@ -527,7 +557,16 @@
     showStatus(els.settingsTransferStatus, `Exported settings for version ${version}.`, 'ok');
   }
 
-  async function importSettingsFile(file) {
+  function importedSettingsNeedHostAccess(next) {
+    return !!(
+      next.coveUrl ||
+      next.showInPageButtons ||
+      next.showOnSupportedSites ||
+      next.showStylizedDownloadButton
+    );
+  }
+
+  async function importSettingsFile(file, permissionPromise) {
     if (!file) return;
     if (file.size > SETTINGS_EXPORT_MAX_BYTES) {
       showStatus(els.settingsTransferStatus, 'Settings file is too large.', 'error');
@@ -547,14 +586,11 @@
     }
     const next = parsed.settings;
     try {
-      if (
-        next.coveUrl ||
-        next.showInPageButtons ||
-        next.showOnSupportedSites ||
-        next.showStylizedDownloadButton
-      ) {
-        const granted = await requestHostPermission();
-        if (!granted) {
+      if (importedSettingsNeedHostAccess(next)) {
+        const granted = permissionPromise ? await permissionPromise : false;
+        if (granted) {
+          chrome.runtime.sendMessage({ type: 'sync-in-page-buttons' }).catch(() => {});
+        } else {
           await storageSetChecked(next);
           settings = await getSettings();
           fillSettingsForm(settings);
@@ -987,12 +1023,15 @@
   if (els.btnImportSettings && els.settingsImportFile) {
     els.btnImportSettings.addEventListener('click', () => {
       els.settingsImportFile.value = '';
+      els.settingsImportFile._covePermission = importHostPermission();
       els.settingsImportFile.click();
     });
     els.settingsImportFile.addEventListener('change', () => {
       const file = els.settingsImportFile.files && els.settingsImportFile.files[0];
+      const permissionPromise = els.settingsImportFile._covePermission || containedHostPermission();
+      els.settingsImportFile._covePermission = null;
       els.settingsImportFile.value = '';
-      importSettingsFile(file).catch((error) => {
+      importSettingsFile(file, permissionPromise).catch((error) => {
         showStatus(els.settingsTransferStatus, error.message || String(error), 'error');
       });
     });
