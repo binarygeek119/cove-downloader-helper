@@ -17,6 +17,7 @@
       </div>
       <nav class="tabs" role="tablist">
         <button type="button" class="tab active" data-tab="download" role="tab" aria-selected="true">Download</button>
+        <button type="button" class="tab" data-tab="videos" role="tab" aria-selected="false" hidden>Videos</button>
         <button type="button" class="tab" data-tab="queue" role="tab" aria-selected="false">Job Queue</button>
         <button type="button" class="tab" data-tab="settings" role="tab" aria-selected="false">Settings</button>
       </nav>
@@ -44,6 +45,22 @@
         <div id="started-jobs" class="started-jobs" hidden>
           <h2>Started jobs</h2>
           <div id="started-jobs-list"></div>
+        </div>
+      </section>
+
+      <section id="panel-videos" class="panel" role="tabpanel" hidden>
+        <div class="row between">
+          <h2 id="videos-heading">Videos on this page</h2>
+          <label class="checkbox">
+            <input type="checkbox" id="videos-select-all" checked />
+            All
+          </label>
+        </div>
+        <p id="videos-status" class="status" hidden></p>
+        <div id="video-list" class="video-list"></div>
+        <div class="video-actions">
+          <button type="button" id="btn-download-videos" class="primary">Download</button>
+          <button type="button" id="btn-download-all-videos" class="secondary">Download all</button>
         </div>
       </section>
 
