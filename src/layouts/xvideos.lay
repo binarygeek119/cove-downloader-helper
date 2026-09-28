@@ -12,6 +12,7 @@
         "showText": true,
         "label": "Download",
         "shape": "square",
+        "stack": true,
         "colors": {
           "background": "transparent",
           "text": "#000000",

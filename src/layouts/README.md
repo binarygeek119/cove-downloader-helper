@@ -52,6 +52,7 @@ Every button uses the extension’s download icon. Pick the rest so it sits in t
 - `size`: `small`, `medium`, or `large`
 - `showText`: `true` or `false`
 - `shape`: `square`, `rounded`, or `pill`
+- `stack`: optional `true` or `false`. Omitted means `false`. `true` puts the icon above the label, for a tab row that already stacks its controls.
 - `colors`: `#rgb` or `#rrggbb` (`background`, `text`, `icon`, `border`, `hoverBackground`). `background`, `border`, and `hoverBackground` may be `transparent` so only the icon and label show.
 - `label`: short text. It is the visible label when `showText` is true, and the accessible name either way.
 - `insert`: `beforebegin`, `afterbegin`, `beforeend`, or `afterend`

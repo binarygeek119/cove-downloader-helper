@@ -63,6 +63,18 @@
     button[data-shape="rounded"] { border-radius: 8px; }
     button[data-shape="pill"] { border-radius: 999px; }
     button[data-shape="pill"][data-text="1"] { padding-inline: 18px; }
+    button[data-stack="1"] {
+      flex-direction: column;
+      gap: 1px;
+      width: auto;
+      min-width: 72px;
+      height: 36px;
+      padding: 1px 10px 0;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    button[data-stack="1"][data-size="large"] { height: 42px; }
+    button[data-stack="1"] svg { width: 16px; height: 16px; }
   `;
   let hoverLink = null;
 
@@ -407,6 +419,12 @@
     alignHostWithFloatedItem(host);
   }
 
+  function alignReplacedHost(host) {
+    host.style.alignSelf = 'flex-start';
+    host.style.flex = '0 0 auto';
+    host.style.margin = '0 0 0 6px';
+  }
+
   function layoutHostPlaced(host, anchor, insert) {
     if (!host || !host.isConnected || !anchor || !anchor.isConnected) return false;
     if (insert === 'beforeend' || insert === 'afterbegin') return host.parentElement === anchor;
@@ -449,6 +467,7 @@
     button.dataset.size = size;
     button.dataset.text = buttonSpec.showText ? '1' : '0';
     button.dataset.shape = shape;
+    button.dataset.stack = buttonSpec.stack ? '1' : '0';
     button.setAttribute('aria-label', label);
     button.title = label;
 
@@ -509,6 +528,7 @@
       try {
         anchor.insertAdjacentElement(insert, host);
         stayInButtonRow(host);
+        if (replace) alignReplacedHost(host);
       } catch (_) {
         host.remove();
       }

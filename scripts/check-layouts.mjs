@@ -51,6 +51,7 @@ function runSelfTests() {
   assert(video.length === 1 && video[0].kind === 'video' && video[0].entity === 'Video', 'video path');
   assert(video[0].button.shape === 'pill' && video[0].button.showText === true, 'video pill');
   assert(video[0].anchor.replace === false, 'insert beside does not replace');
+  assert(video[0].button.stack === false, 'default button is a row');
   assert(
     video[0].anchor.selector === '.userActions .js_videoSubscribeButton' && video[0].anchor.insert === 'afterend',
     'video sits beside subscribe'
@@ -164,6 +165,10 @@ function runSelfTests() {
   );
   assert(replaced[0].anchor.replace === true && replaced[0].anchor.insert === 'beforebegin', 'replace is kept');
 
+  const badStack = structuredClone(sample);
+  badStack.targets[0].button.stack = 'yes';
+  assert(validateLayout(badStack).some((error) => error.includes('stack')), 'stack must be boolean');
+
   const badReplace = structuredClone(replacing);
   badReplace.targets[0].anchor.replace = 'yes';
   assert(validateLayout(badReplace).some((error) => error.includes('replace')), 'replace must be boolean');
@@ -185,6 +190,7 @@ function runSelfTests() {
     'xvideos replaces the download button'
   );
   assert(watch[0].button.colors.background === 'transparent' && watch[0].button.colors.icon === '#a8a8a8', 'xvideos icon');
+  assert(watch[0].button.stack === true && watch[0].button.showText === true, 'xvideos stacks the icon and label');
   const listing = matchLayoutTargets([xvideos], 'https://www.xvideos.com/');
   assert(listing.length === 0, 'xvideos home is not a watch page');
   const liked = matchLayoutTargets([xvideos], 'https://www.xvideos.com/videos-i-like');

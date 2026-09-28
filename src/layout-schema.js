@@ -274,6 +274,9 @@ function validateLayout(data) {
     if (!LAYOUT_SHAPES.includes(button.shape)) {
       errors.push(`${where}.button.shape must be square, rounded, or pill`);
     }
+    if (button.stack !== undefined && typeof button.stack !== 'boolean') {
+      errors.push(`${where}.button.stack must be true or false`);
+    }
     const colors = button.colors;
     if (!colors || typeof colors !== 'object') {
       errors.push(`${where}.button.colors is required`);
@@ -318,6 +321,7 @@ function sanitizeLayoutTarget(target) {
       showText: target.button.showText,
       label: target.button.label.trim(),
       shape: target.button.shape,
+      stack: target.button.stack === true,
       colors: {
         background: normalizeLayoutColor('background', colors.background),
         text: normalizeLayoutColor('text', colors.text),
