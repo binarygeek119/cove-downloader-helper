@@ -100,7 +100,12 @@ async function injectDownloaderButtonIntoOpenTabs() {
   );
 }
 
-async function syncInPageContentScript() {
+function isDuplicateScriptError(error) {
+  const message = error && error.message ? error.message : String(error || '');
+  return /duplicate script id/i.test(message);
+}
+
+async function syncInPageContentScriptNow() {
   const settings = await getSettings();
   const allowed = await hasBroadHostPermission();
   const want =
@@ -115,15 +120,21 @@ async function syncInPageContentScript() {
   const registered = existing && existing.length > 0;
 
   if (want && !registered) {
-    await chrome.scripting.registerContentScripts([
-      {
-        id: CONTENT_SCRIPT_ID,
-        js: ['content.js'],
-        matches: HOST_ORIGINS,
-        runAt: 'document_idle',
-        persistAcrossSessions: true,
-      },
-    ]);
+    try {
+      await chrome.scripting.registerContentScripts([
+        {
+          id: CONTENT_SCRIPT_ID,
+          js: ['content.js'],
+          matches: HOST_ORIGINS,
+          runAt: 'document_idle',
+          persistAcrossSessions: true,
+        },
+      ]);
+    } catch (error) {
+      // Startup, permission grant, and settings changes can all sync at once.
+      // Another call may have registered this id after the check above.
+      if (!isDuplicateScriptError(error)) throw error;
+    }
   } else if (!want && registered) {
     await chrome.scripting.unregisterContentScripts({ ids: [CONTENT_SCRIPT_ID] });
   }
@@ -133,6 +144,19 @@ async function syncInPageContentScript() {
   if (want) {
     await injectDownloaderButtonIntoOpenTabs();
   }
+}
+
+// One registration at a time. Overlapping syncs both observe "not registered"
+// and the second registerContentScripts throws Duplicate script ID.
+let contentScriptSync = Promise.resolve();
+
+function syncInPageContentScript() {
+  const run = contentScriptSync.then(() => syncInPageContentScriptNow());
+  contentScriptSync = run.then(
+    () => {},
+    () => {}
+  );
+  return run;
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -384,24 +408,110 @@ chrome.contextMenus.onClicked.addListener((item, tab) => {
   void run();
 });
 
-function isVideoFileUrl(url) {
+const PROGRESSIVE_VIDEO_EXT = /\.(?:mp4|m4v|webm|mov|mkv|ogv|ogg|flv)$/i;
+const STREAM_VIDEO_EXT = /\.(?:m3u8|mpd)$/i;
+
+function pathHasExt(url, pattern) {
   try {
-    return /\.(?:mp4|m4v|webm|mov|m3u8|mpd|mkv|ogv|ogg|flv)$/i.test(new URL(url).pathname);
+    return pattern.test(new URL(url).pathname);
   } catch (_) {
     return false;
   }
 }
 
-// yt-dlp reads a referer smuggled in the URL fragment. Direct file hosts
-// such as Erome reject the download unless that referer is the page.
-function videoUrlForCove(mediaUrl, pageUrl) {
-  if (!isVideoFileUrl(mediaUrl) || !isHttpUrl(pageUrl)) return mediaUrl;
+function isVideoFileUrl(url) {
+  return pathHasExt(url, PROGRESSIVE_VIDEO_EXT) || pathHasExt(url, STREAM_VIDEO_EXT);
+}
+
+function utf8Base64(value) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function fileNameForCove(mediaUrl) {
+  let base = 'video.mp4';
   try {
+    const segment = new URL(mediaUrl).pathname.split('/').filter(Boolean).pop();
+    if (segment) {
+      try {
+        base = decodeURIComponent(segment);
+      } catch (_) {
+        base = segment;
+      }
+    }
+  } catch (_) {
+    // Keep the fallback name.
+  }
+  const cleaned = base.replace(/[^A-Za-z0-9._-]+/g, '_');
+  if (/\.[A-Za-z0-9]+$/.test(cleaned)) return cleaned.slice(0, 120);
+  return (cleaned.slice(0, 110) || 'video') + '.mp4';
+}
+
+function streamResolution(fileName) {
+  const match = String(fileName).match(/(?:^|[^0-9])(240|360|480|720|1080|1440|2160)p/i);
+  const height = match ? Number(match[1]) : 720;
+  const width = { 240: 426, 360: 640, 480: 854, 720: 1280, 1080: 1920, 1440: 2560, 2160: 3840 }[height] || 1280;
+  return width + 'x' + height;
+}
+
+function withYtDlpReferer(url, pageUrl) {
+  if (!isHttpUrl(pageUrl)) return url;
+  try {
+    const page = new URL(pageUrl);
+    const payload = encodeURIComponent(JSON.stringify({ referer: page.href }));
+    return url + '#__youtubedl_smuggle=' + payload;
+  } catch (_) {
+    return url;
+  }
+}
+
+// A bare MP4 has no codec and no height, so Cove's yt-dlp downloader reports
+// that it is not a video. One HLS segment keeps the original file bytes and
+// gives yt-dlp a codec. The page referer is what a browser save sends; file
+// hosts such as Erome reject the download without it.
+function progressiveVideoUrlForCove(mediaUrl, pageUrl) {
+  const media = new URL(mediaUrl);
+  media.hash = '';
+  const fileHref = media.href.replace(/[\r\n]/g, '');
+  const fileName = fileNameForCove(fileHref);
+  const mediaPlaylist = [
+    '#EXTM3U',
+    '#EXT-X-VERSION:3',
+    '#EXT-X-TARGETDURATION:86400',
+    '#EXT-X-PLAYLIST-TYPE:VOD',
+    '#EXTINF:86400.0,',
+    fileHref,
+    '#EXT-X-ENDLIST',
+    '',
+  ].join('\n');
+  const masterPlaylist = [
+    '#EXTM3U',
+    '#EXT-X-STREAM-INF:BANDWIDTH=800000,RESOLUTION=' +
+      streamResolution(fileName) +
+      ',CODECS="avc1.4d401f,mp4a.40.2"',
+    'data:application/vnd.apple.mpegurl;base64,' + utf8Base64(mediaPlaylist),
+    '',
+  ].join('\n');
+  const wrapped =
+    'data:application/vnd.apple.mpegurl;filename=/' +
+    fileName +
+    ';base64,' +
+    utf8Base64(masterPlaylist);
+  return withYtDlpReferer(wrapped, pageUrl);
+}
+
+function videoUrlForCove(mediaUrl, pageUrl) {
+  try {
+    if (pathHasExt(mediaUrl, PROGRESSIVE_VIDEO_EXT)) {
+      return progressiveVideoUrlForCove(mediaUrl, pageUrl);
+    }
+    if (!pathHasExt(mediaUrl, STREAM_VIDEO_EXT) || !isHttpUrl(pageUrl)) return mediaUrl;
     const media = new URL(mediaUrl);
     const page = new URL(pageUrl);
     if (media.href === page.href) return mediaUrl;
-    const payload = encodeURIComponent(JSON.stringify({ referer: page.href }));
-    return media.href + '#__youtubedl_smuggle=' + payload;
+    return withYtDlpReferer(media.href, page.href);
   } catch (_) {
     return mediaUrl;
   }
@@ -483,85 +593,94 @@ async function downloadPageVideos(urls, pageUrl) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
-    if (!message || !message.type) {
-      sendResponse({ ok: false, error: 'Unknown message' });
-      return;
-    }
-
-    if (message.type === 'get-settings') {
-      const settings = await getSettings();
-      const extraHosts = await getExtraSupportedHosts(settings);
-      settings.supportedHosts = SUPPORTED_SITE_HOSTS.concat(extraHosts);
-      sendResponse({ ok: true, settings });
-      return;
-    }
-
-    if (message.type === 'request-host-permission') {
-      const granted = await requestBroadHostPermission();
-      if (granted) await syncInPageContentScript();
-      sendResponse({ ok: granted });
-      return;
-    }
-
-    if (message.type === 'get-stylized-layout') {
-      const settings = await getSettings();
-      if (!settings.showStylizedDownloadButton) {
-        sendResponse({ ok: true, targets: [] });
+    try {
+      if (!message || !message.type) {
+        sendResponse({ ok: false, error: 'Unknown message' });
         return;
       }
-      const tabUrl = (sender.tab && sender.tab.url) || '';
-      let pageUrl = tabUrl;
-      if (message.url && tabUrl) {
-        try {
-          const requested = new URL(message.url);
-          const tab = new URL(tabUrl);
-          if (requested.origin === tab.origin) pageUrl = requested.href;
-        } catch (_) {
-          pageUrl = tabUrl;
+
+      if (message.type === 'get-settings') {
+        const settings = await getSettings();
+        const extraHosts = await getExtraSupportedHosts(settings);
+        settings.supportedHosts = SUPPORTED_SITE_HOSTS.concat(extraHosts);
+        sendResponse({ ok: true, settings });
+        return;
+      }
+
+      if (message.type === 'request-host-permission') {
+        const granted = await requestBroadHostPermission();
+        if (granted) await syncInPageContentScript();
+        sendResponse({ ok: granted });
+        return;
+      }
+
+      if (message.type === 'get-stylized-layout') {
+        const settings = await getSettings();
+        if (!settings.showStylizedDownloadButton) {
+          sendResponse({ ok: true, targets: [] });
+          return;
         }
+        const tabUrl = (sender.tab && sender.tab.url) || '';
+        let pageUrl = tabUrl;
+        if (message.url && tabUrl) {
+          try {
+            const requested = new URL(message.url);
+            const tab = new URL(tabUrl);
+            if (requested.origin === tab.origin) pageUrl = requested.href;
+          } catch (_) {
+            pageUrl = tabUrl;
+          }
+        }
+        const targets = matchLayoutTargets(await loadSiteLayouts(), pageUrl);
+        sendResponse({ ok: true, targets });
+        return;
       }
-      const targets = matchLayoutTargets(await loadSiteLayouts(), pageUrl);
-      sendResponse({ ok: true, targets });
-      return;
-    }
 
-    if (message.type === 'collect-page-videos') {
+      if (message.type === 'collect-page-videos') {
+        try {
+          const result = await collectPageVideos(message.tabId);
+          sendResponse({ ok: true, ...result });
+        } catch (error) {
+          sendResponse({ ok: false, error: error.message || String(error), videos: [] });
+        }
+        return;
+      }
+
+      if (message.type === 'download-page-videos') {
+        try {
+          const result = await downloadPageVideos(message.urls, message.pageUrl);
+          sendResponse({ ok: true, ...result });
+        } catch (error) {
+          sendResponse({ ok: false, error: error.message || String(error) });
+        }
+        return;
+      }
+
+      if (message.type === 'send-to-cove') {
+        try {
+          const result = await beginSendToCove(message.url, sender.tab, { entity: message.entity });
+          sendResponse({ ok: true, ...result });
+        } catch (error) {
+          sendResponse({ ok: false, error: error.message || String(error) });
+        }
+        return;
+      }
+
+      if (message.type === 'open-settings') {
+        await openAppWindow('?tab=settings');
+        sendResponse({ ok: true });
+        return;
+      }
+
+      sendResponse({ ok: false, error: 'Unhandled message type' });
+    } catch (error) {
+      const messageText = error && error.message ? error.message : String(error);
       try {
-        const result = await collectPageVideos(message.tabId);
-        sendResponse({ ok: true, ...result });
-      } catch (error) {
-        sendResponse({ ok: false, error: error.message || String(error), videos: [] });
+        sendResponse({ ok: false, error: messageText });
+      } catch (_) {
+        // The response was already sent.
       }
-      return;
     }
-
-    if (message.type === 'download-page-videos') {
-      try {
-        const result = await downloadPageVideos(message.urls, message.pageUrl);
-        sendResponse({ ok: true, ...result });
-      } catch (error) {
-        sendResponse({ ok: false, error: error.message || String(error) });
-      }
-      return;
-    }
-
-    if (message.type === 'send-to-cove') {
-      try {
-        const result = await beginSendToCove(message.url, sender.tab, { entity: message.entity });
-        sendResponse({ ok: true, ...result });
-      } catch (error) {
-        sendResponse({ ok: false, error: error.message || String(error) });
-      }
-      return;
-    }
-
-    if (message.type === 'open-settings') {
-      await openAppWindow('?tab=settings');
-      sendResponse({ ok: true });
-      return;
-    }
-
-    sendResponse({ ok: false, error: 'Unhandled message type' });
   })();
   return true;
 });
