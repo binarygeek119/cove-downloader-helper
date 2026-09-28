@@ -14,10 +14,10 @@ Repository: https://github.com/binarygeek119/cove-downloader-helper
 
 - **Left-click** the toolbar icon to download the **current page**
 - **Right-click** a link or page → Send to Cove
-- Optional **in-page** floating button and link chip (toggle in Settings)
+- Optional bottom-right download bubble on every page (**Show on all pages**) or only on supported sites (**Show in supported sites**)
 - Cove **match** API with quality picker and **Video / Audio / Text** type override
 - **Job Queue** tab for live Cove jobs (progress, cancel, history)
-- Settings in-app: Cove URL, optional PAT, preferred mode, auto-send, queue-all, in-page buttons
+- Settings in-app: Cove URL, optional PAT, preferred mode, auto-send, queue-all, downloader button on every page
 
 ## Requirements
 
@@ -53,7 +53,8 @@ Install the community downloaders from the [official extension registry](https:/
 - Left-click the icon on a page to open the Download tab for that URL.
 - Right-click a link or the page background to send that URL.
 - If the matcher picks the wrong type, use **Type override** (Video / Audio / Text) before sending.
-- Toggle **Show in-page buttons** in Settings.
+- Toggle **Show on all pages** to show the bottom-right download bubble on every page.
+- Toggle **Show in supported sites** to show that same bubble only on sites Cove downloaders support.
 - Use **Job Queue** to watch and cancel active Cove jobs.
 
 ## Build / CI
@@ -69,7 +70,15 @@ Creates a packed Chrome extension zip in `builds/`:
 - `cove-downloader-helper-{version}-chrome.zip` (preferred)
 - `cove-downloader-helper-{version}.zip` (alias)
 
-On every push to `master`/`main`, GitHub Actions packs the extension and publishes/updates the GitHub Release `v{version}` with those zip assets.
+On every push to `master`/`main`, GitHub Actions packs the extension and publishes/updates the GitHub Release `v{version}` with those zip assets. The same workflow then uploads that zip to an existing Chrome Web Store item and submits it for review when these repository secrets are set:
+
+- `CHROME_WEBSTORE_CLIENT_ID`
+- `CHROME_WEBSTORE_CLIENT_SECRET`
+- `CHROME_WEBSTORE_REFRESH_TOKEN`
+- `CHROME_EXTENSION_ID`
+- `CHROME_PUBLISHER_ID`
+
+Create the store item once in the Developer Dashboard (listing and privacy tabs filled in). Each later publish needs a higher `version` in `src/manifest.json` than the version already in the store. Until the secrets exist, the store job logs a warning and succeeds. A manual run of the workflow can turn off **Publish the packed zip to the Chrome Web Store**.
 
 ## Credits
 

@@ -10,6 +10,8 @@ const DEFAULT_SETTINGS = {
   apiToken: '',
   preferredMode: 'Video',
   showInPageButtons: true,
+  showOnSupportedSites: false,
+  showStylizedDownloadButton: false,
   autoSend: false,
   queueAllMatches: false,
   autoApplyMetadata: true,
@@ -54,6 +56,8 @@ async function getSettings() {
       data.showInPageButtons === undefined
         ? DEFAULT_SETTINGS.showInPageButtons
         : !!data.showInPageButtons,
+    showOnSupportedSites: !!data.showOnSupportedSites,
+    showStylizedDownloadButton: !!data.showStylizedDownloadButton,
     autoSend: !!data.autoSend,
     queueAllMatches: !!data.queueAllMatches,
     autoApplyMetadata:
@@ -151,6 +155,117 @@ async function cancelJob(settings, jobId) {
 
 function isYtDlpId(downloaderId) {
   return String(downloaderId || '').startsWith('cove.community.downloaders.ytdlp/');
+}
+
+/**
+ * Sites the bundled Cove downloaders actually handle.
+ * yt-dlp advertises every http(s) URL, so those wildcard patterns are ignored
+ * and the common yt-dlp hosts are listed here instead.
+ */
+const SUPPORTED_SITE_HOSTS = [
+  'literotica.com',
+  'soundgasm.net',
+  'whyp.it',
+  'reddit.com',
+  'redd.it',
+  'redgifs.com',
+  'redgif.com',
+  'youtube.com',
+  'youtu.be',
+  'youtube-nocookie.com',
+  'vimeo.com',
+  'twitch.tv',
+  'tiktok.com',
+  'instagram.com',
+  'twitter.com',
+  'x.com',
+  'facebook.com',
+  'fb.watch',
+  'dailymotion.com',
+  'soundcloud.com',
+  'bandcamp.com',
+  'rumble.com',
+  'bitchute.com',
+  'odysee.com',
+  'nicovideo.jp',
+  'bilibili.com',
+  'streamable.com',
+  'imgur.com',
+  'pornhub.com',
+  'xvideos.com',
+  'xnxx.com',
+  'xhamster.com',
+  'spankbang.com',
+  'eporner.com',
+  'youporn.com',
+  'redtube.com',
+  'tnaflix.com',
+  'motherless.com',
+  'erome.com',
+];
+
+const DIRECT_MEDIA_EXT = /\.(mp4|webm|mkv|mov|m4v|mp3|m4a|flac|wav|ogg|opus|jpg|jpeg|png|gif|webp)$/i;
+
+function hostMatchesSite(hostname, site) {
+  const host = String(hostname || '').replace(/^www\./i, '').toLowerCase();
+  const normalized = String(site || '').replace(/^www\./i, '').toLowerCase();
+  if (!host || !normalized || normalized === '*') return false;
+  return host === normalized || host.endsWith('.' + normalized);
+}
+
+function hostsFromUrlPattern(pattern) {
+  let raw = String(pattern || '').trim().toLowerCase();
+  if (!raw || raw === '*' || raw === 'http://*/*' || raw === 'https://*/*' || raw === '*://*/*') {
+    return [];
+  }
+  raw = raw.replace(/^[a-z*]+:\/\//, '').replace(/^\*\./, '');
+  const hostPart = raw.split(/[/?#]/)[0].replace(/^\*\./, '').replace(/^www\./, '');
+  if (!hostPart || hostPart === '*' || hostPart.includes('*')) return [];
+  return [hostPart];
+}
+
+function isDirectMediaUrl(url) {
+  try {
+    return DIRECT_MEDIA_EXT.test(new URL(url).pathname);
+  } catch (_) {
+    return false;
+  }
+}
+
+function isSupportedSiteUrl(url, extraHosts) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    if (isDirectMediaUrl(url)) return true;
+    const sites = SUPPORTED_SITE_HOSTS.concat(extraHosts || []);
+    return sites.some((site) => hostMatchesSite(parsed.hostname, site));
+  } catch (_) {
+    return false;
+  }
+}
+
+let supportedHostCache = { at: 0, hosts: [] };
+
+async function getExtraSupportedHosts(settings) {
+  const now = Date.now();
+  if (now - supportedHostCache.at < 10 * 60 * 1000 && supportedHostCache.hosts.length) {
+    return supportedHostCache.hosts;
+  }
+  if (!settings || !settings.coveUrl) return supportedHostCache.hosts;
+  try {
+    const { body } = await coveFetch(settings, '/api/system/downloaders', { method: 'GET' });
+    const hosts = [];
+    (Array.isArray(body) ? body : []).forEach((item) => {
+      const patterns = (item && (item.supportedUrlPatterns || item.SupportedUrlPatterns)) || [];
+      patterns.forEach((pattern) => {
+        hostsFromUrlPattern(pattern).forEach((host) => hosts.push(host));
+      });
+    });
+    supportedHostCache = { at: now, hosts };
+    return hosts;
+  } catch (_) {
+    return supportedHostCache.hosts;
+  }
 }
 
 function isTextSiteUrl(url) {

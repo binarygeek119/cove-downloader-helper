@@ -16,6 +16,22 @@ Upload:
 
 (or the version printed by the script)
 
+## Automated publish
+
+After the first dashboard upload, `.github/workflows/pack-and-release.yml` publishes later versions. It runs `scripts/publish-chrome-webstore.sh` on pushes to `master`/`main`, and on a manual run unless **Publish the packed zip to the Chrome Web Store** is turned off.
+
+Add these repository secrets ([Chrome Web Store API](https://developer.chrome.com/docs/webstore/using-api)):
+
+| Secret | Value |
+| --- | --- |
+| `CHROME_WEBSTORE_CLIENT_ID` | OAuth client ID |
+| `CHROME_WEBSTORE_CLIENT_SECRET` | OAuth client secret |
+| `CHROME_WEBSTORE_REFRESH_TOKEN` | Refresh token for scope `https://www.googleapis.com/auth/chromewebstore` |
+| `CHROME_EXTENSION_ID` | Store item ID |
+| `CHROME_PUBLISHER_ID` | Publisher ID from Developer Dashboard → Publisher → Settings |
+
+The job skips with a warning until every secret is set. Raise `version` in `src/manifest.json` before each publish; the store rejects an upload that does not increase it.
+
 ## Store listing
 
 | Field | Value |
@@ -40,7 +56,7 @@ Send the current page or a link to Cove so registered downloaders (yt-dlp, Commo
 Features:
 • Left-click the toolbar icon to send the current page
 • Right-click a link or page → Send to Cove
-• Optional in-page button and link chip (Settings)
+• Optional bottom-right download bubble on every page, or only on supported sites (Settings)
 • Match results with quality picker and Video / Audio / Text override
 • Live job queue for downloads you start from the helper
 • Works with your Cove URL and optional personal access token
@@ -83,8 +99,8 @@ https://github.com/binarygeek119/cove-downloader-helper/blob/master/PRIVACY.md
 | `tabs` | Read the active tab URL when the user clicks the toolbar icon or uses page context actions; open the helper UI tab. |
 | `activeTab` | Temporary access to the tab the user invokes the extension on. |
 | `contextMenus` | “Send link/page to Cove” items in the right-click menu. |
-| `scripting` | Register optional in-page buttons only when the user enables them and grants site access. |
-| Host access `http://*/*`, `https://*/*` (optional) | Call the user-configured Cove origin (any host/port they choose, including LAN/localhost) and optionally inject in-page controls on sites where the user wants one-click send. Requested at runtime, not granted until the user approves. |
+| `scripting` | Inject the optional downloader button on every page only when the user enables Show on all pages and grants site access. |
+| Host access `http://*/*`, `https://*/*` (optional) | Call the user-configured Cove origin (any host/port they choose, including LAN/localhost) and, when Show on all pages is enabled, inject the downloader button on every site. Requested at runtime, not granted until the user approves. |
 
 ### Data disclosure
 
@@ -103,6 +119,7 @@ https://github.com/binarygeek119/cove-downloader-helper/blob/master/PRIVACY.md
 - [ ] Confirm optional host permission prompt appears on first send / settings save
 - [ ] In-page buttons appear only when enabled + permission granted
 - [ ] Zip built with `./scripts/pack-extension.sh --force`
+- [ ] Store secrets added if GitHub Actions should publish later versions
 - [ ] Privacy policy URL opens publicly
 - [ ] Store icon + at least one 1280×800 screenshot uploaded
 - [ ] Permission justifications pasted into Privacy tab

@@ -1,25 +1,44 @@
 :root {
   color-scheme: light dark;
+  --accent: #3d8bfd;
+  --accent-text: #fff;
+  --warn: #f0c14b;
   --bg: #0f1419;
   --panel: #171d25;
   --text: #e7ecf1;
   --muted: #9aa7b5;
-  --accent: #3d8bfd;
-  --accent-text: #fff;
   --border: #2a3441;
   --ok: #3dd68c;
   --err: #ff6b6b;
-  --warn: #f0c14b;
+  --switch-track: #3a4656;
   font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0f1419;
+    --panel: #171d25;
+    --text: #e7ecf1;
+    --muted: #9aa7b5;
+    --border: #2a3441;
+    --ok: #3dd68c;
+    --err: #ff6b6b;
+    --switch-track: #3a4656;
+  }
 }
 
 @media (prefers-color-scheme: light) {
   :root {
+    color-scheme: light;
     --bg: #f4f6f8;
     --panel: #ffffff;
     --text: #1a2330;
     --muted: #5b6b7c;
     --border: #d5dde6;
+    --ok: #0d8a4d;
+    --err: #c62828;
+    --switch-track: #9aa8b6;
   }
 }
 
@@ -101,6 +120,58 @@ label.checkbox {
   flex-direction: row;
   align-items: center;
   font-weight: 450;
+}
+
+label.switch {
+  position: relative;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  font-weight: 450;
+  cursor: pointer;
+}
+
+label.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.switch-ui {
+  position: relative;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--switch-track);
+  transition: background 0.15s ease;
+}
+
+.switch-ui::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s ease;
+}
+
+label.switch input:checked + .switch-ui {
+  background: var(--accent);
+}
+
+label.switch input:checked + .switch-ui::after {
+  transform: translateX(16px);
+}
+
+label.switch input:focus-visible + .switch-ui {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 input[type="url"],

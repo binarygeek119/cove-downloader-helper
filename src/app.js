@@ -38,6 +38,8 @@
     apiToken: document.getElementById('apiToken'),
     preferredMode: document.getElementById('preferredMode'),
     showInPageButtons: document.getElementById('showInPageButtons'),
+    showOnSupportedSites: document.getElementById('showOnSupportedSites'),
+    showStylizedDownloadButton: document.getElementById('showStylizedDownloadButton'),
     autoSend: document.getElementById('autoSend'),
     queueAllMatches: document.getElementById('queueAllMatches'),
     autoApplyMetadata: document.getElementById('autoApplyMetadata'),
@@ -82,6 +84,8 @@
     els.apiToken.value = data.apiToken || '';
     els.preferredMode.value = data.preferredMode || 'Video';
     els.showInPageButtons.checked = !!data.showInPageButtons;
+    els.showOnSupportedSites.checked = !!data.showOnSupportedSites;
+    els.showStylizedDownloadButton.checked = !!data.showStylizedDownloadButton;
     els.autoSend.checked = !!data.autoSend;
     els.queueAllMatches.checked = !!data.queueAllMatches;
     els.autoApplyMetadata.checked = !!data.autoApplyMetadata;
@@ -103,12 +107,14 @@
       apiToken: els.apiToken.value.trim(),
       preferredMode: els.preferredMode.value,
       showInPageButtons: els.showInPageButtons.checked,
+      showOnSupportedSites: els.showOnSupportedSites.checked,
+      showStylizedDownloadButton: els.showStylizedDownloadButton.checked,
       autoSend: els.autoSend.checked,
       queueAllMatches: els.queueAllMatches.checked,
       autoApplyMetadata: els.autoApplyMetadata.checked,
     };
 
-    if (next.coveUrl || next.showInPageButtons) {
+    if (next.coveUrl || next.showInPageButtons || next.showOnSupportedSites) {
       const granted = await new Promise((resolve) => {
         chrome.runtime.sendMessage({ type: 'request-host-permission' }, (response) => {
           if (chrome.runtime.lastError) {
@@ -121,7 +127,7 @@
       if (!granted) {
         els.settingsSaved.hidden = false;
         els.settingsSaved.textContent =
-          'Settings saved locally, but site access was denied. Grant permission to talk to Cove and use in-page buttons.';
+          'Settings saved locally, but site access was denied. Grant permission to talk to Cove and show the download bubble.';
         els.settingsSaved.className = 'status error';
         await storageSet(next);
         settings = await getSettings();

@@ -1,12 +1,19 @@
 (() => {
+  if (globalThis.__coveDownloaderHelperInjected) return;
+  globalThis.__coveDownloaderHelperInjected = true;
+
   const HOST_ID = 'cove-downloader-helper-root';
   let root = null;
   let shadow = null;
   let fab = null;
   let chip = null;
   let toastEl = null;
+  const DIRECT_MEDIA_EXT = /\.(mp4|webm|mkv|mov|m4v|mp3|m4a|flac|wav|ogg|opus|jpg|jpeg|png|gif|webp)$/i;
+
   let settings = {
-    showInPageButtons: true,
+    showInPageButtons: false,
+    showOnSupportedSites: false,
+    supportedHosts: [],
     coveUrl: '',
   };
   let hoverLink = null;
@@ -62,6 +69,7 @@
     shadow.innerHTML = `
       <style>
         :host, * { box-sizing: border-box; font-family: "Segoe UI", system-ui, sans-serif; }
+        :host { color-scheme: light dark; }
         #fab {
           position: fixed;
           right: 16px;
@@ -71,8 +79,12 @@
           height: 44px;
           padding: 0;
           border-radius: 999px;
-          border: none;
-          background: #171d25 url("${iconUrl}") center / 28px 28px no-repeat;
+          border: 1px solid #2a3441;
+          background-color: #171d25;
+          background-image: url("${iconUrl}");
+          background-position: center;
+          background-size: 28px 28px;
+          background-repeat: no-repeat;
           box-shadow: 0 8px 24px rgba(0,0,0,.28);
           cursor: pointer;
         }
@@ -108,6 +120,15 @@
           box-shadow: 0 8px 24px rgba(0,0,0,.28);
         }
         #toast[data-error="1"] { border-color: #ff6b6b; color: #ffb4b4; }
+        @media (prefers-color-scheme: light) {
+          #fab, #chip, #toast {
+            background-color: #ffffff;
+            color: #1a2330;
+            border-color: #d5dde6;
+            box-shadow: 0 8px 24px rgba(20, 32, 48, .16);
+          }
+          #toast[data-error="1"] { border-color: #c62828; color: #a32020; }
+        }
       </style>
       <button id="fab" type="button" title="Send page to Cove" aria-label="Send page to Cove"></button>
       <button id="chip" type="button" title="Send link to Cove">Cove</button>
@@ -146,8 +167,23 @@
     }
   }
 
+  function hostMatchesSite(hostname, site) {
+    const host = String(hostname || '').replace(/^www\./i, '').toLowerCase();
+    const normalized = String(site || '').replace(/^www\./i, '').toLowerCase();
+    if (!host || !normalized || normalized === '*') return false;
+    return host === normalized || host.endsWith('.' + normalized);
+  }
+
+  function isSupportedPage() {
+    if (DIRECT_MEDIA_EXT.test(location.pathname)) return true;
+    const sites = settings.supportedHosts || [];
+    return sites.some((site) => hostMatchesSite(location.hostname, site));
+  }
+
   function shouldShow() {
-    if (!settings.showInPageButtons) return false;
+    const wantsAll = !!settings.showInPageButtons;
+    const wantsSupported = !!settings.showOnSupportedSites;
+    if (!wantsAll && !wantsSupported) return false;
     try {
       if (settings.coveUrl) {
         const coveOrigin = new URL(settings.coveUrl).origin;
@@ -157,7 +193,8 @@
       /* ignore bad cove url */
     }
     if (location.protocol !== 'http:' && location.protocol !== 'https:') return false;
-    return true;
+    if (wantsAll) return true;
+    return isSupportedPage();
   }
 
   function applyVisibility() {
@@ -217,7 +254,7 @@
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'sync') return;
-    if (changes.showInPageButtons || changes.coveUrl) {
+    if (changes.showInPageButtons || changes.showOnSupportedSites || changes.coveUrl) {
       loadSettings();
     }
   });
@@ -227,9 +264,9 @@
 
   // Keep floating button meaningful on SPA navigations.
   const notifyUrlChange = () => {
-    /* visibility depends on origin, not path; toast/chip cleared */
     chip.style.display = 'none';
     hoverLink = null;
+    applyVisibility();
   };
   window.addEventListener('popstate', notifyUrlChange);
   const wrapHistory = (method) => {
@@ -248,5 +285,6 @@
   }
 
   ensureUi();
+  fab.style.display = 'none';
   loadSettings();
 })();
