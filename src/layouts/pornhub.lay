@@ -11,7 +11,7 @@
         "size": "medium",
         "showText": true,
         "label": "Download",
-        "shape": "rounded",
+        "shape": "pill",
         "colors": {
           "background": "#ff9000",
           "text": "#ffffff",
@@ -24,7 +24,7 @@
     {
       "id": "album",
       "kind": "image",
-      "path": "/album",
+      "path": "/photo",
       "anchor": { "selector": ".photoAlbum", "insert": "beforeend" },
       "button": {
         "size": "medium",

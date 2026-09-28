@@ -49,29 +49,39 @@ function runSelfTests() {
     'https://www.pornhub.com/view_video.php?viewkey=63e69d5ec09f3'
   );
   assert(video.length === 1 && video[0].kind === 'video' && video[0].entity === 'Video', 'video path');
+  assert(video[0].button.shape === 'pill' && video[0].button.showText === true, 'video pill');
+  assert(
+    video[0].anchor.selector === '.userActions .js_videoSubscribeButton' && video[0].anchor.insert === 'afterend',
+    'video sits beside subscribe'
+  );
 
-  const album = matchLayoutTargets([sample], 'https://www.pornhub.com/album/80791185');
-  assert(album.length === 1 && album[0].kind === 'image' && album[0].entity === 'Image', 'album path');
-
-  const albums = matchLayoutTargets([sample], 'https://pornhub.com/albums');
-  assert(albums.length === 1 && albums[0].id === 'album', 'albums prefix');
+  const albumUrl = matchLayoutTargets([sample], 'https://www.pornhub.com/album/80791185');
+  assert(albumUrl.length === 0, 'album path is not used');
 
   const photo = matchLayoutTargets([sample], 'https://www.pornhub.com/photo/868704295');
-  assert(photo.length === 1 && photo[0].id === 'photo' && photo[0].entity === 'Image', 'photo path');
-  assert(photo[0].button.size === 'small' && photo[0].button.showText === false, 'photo icon');
-  assert(photo[0].anchor.selector === '#ratingSpace > li.omega' && photo[0].anchor.insert === 'afterend', 'photo bar');
-
-  const gifs = matchLayoutTargets([sample], 'https://www.pornhub.com/gifs');
-  assert(gifs.length === 1 && gifs[0].id === 'gifs' && gifs[0].entity === 'Image', 'gifs listing keeps the longer path');
+  const photoIds = photo.map((target) => target.id).sort().join();
+  assert(photoIds === 'album,photo', 'photo page matches both image targets');
+  assert(photo.every((target) => target.entity === 'Image' && target.path === '/photo'), 'photo path');
+  const photoBar = photo.find((target) => target.id === 'photo');
+  assert(photoBar.button.size === 'small' && photoBar.button.showText === false, 'photo icon');
+  assert(photoBar.anchor.selector === '#ratingSpace > li.omega' && photoBar.anchor.insert === 'afterend', 'photo bar');
+  assert(photo.find((target) => target.id === 'album').anchor.selector === '.photoAlbum', 'photo album block');
 
   const gifPage = matchLayoutTargets([sample], 'https://www.pornhub.com/gif/55153161');
-  assert(gifPage.length === 1 && gifPage[0].id === 'gif' && gifPage[0].entity === 'Image', 'gif page');
-  assert(gifPage[0].button.size === 'small' && gifPage[0].button.showText === false, 'gif icon');
+  const gifIds = gifPage.map((target) => target.id).sort().join();
+  assert(gifIds === 'gif,gifs', 'gif page matches both gif targets');
+  assert(gifPage.every((target) => target.entity === 'Image' && target.path === '/gif'), 'gif path');
+  const gifBar = gifPage.find((target) => target.id === 'gif');
+  assert(gifBar.button.size === 'small' && gifBar.button.showText === false, 'gif icon');
   assert(
-    gifPage[0].anchor.selector === 'ul.votingWrap > li:has(#favoriteGifButton)' &&
-      gifPage[0].anchor.insert === 'afterend',
+    gifBar.anchor.selector === 'ul.votingWrap > li:has(#favoriteGifButton)' &&
+      gifBar.anchor.insert === 'afterend',
     'gif bar'
   );
+  assert(gifPage.find((target) => target.id === 'gifs').anchor.selector === '.gifVideoBlock', 'gif grid');
+
+  const gifListing = matchLayoutTargets([sample], 'https://www.pornhub.com/gifs');
+  assert(gifListing.map((target) => target.id).sort().join() === 'gif,gifs', '/gifs uses the /gif prefix');
 
   const gifLater = matchLayoutTargets([sample], 'https://www.pornhub.com/user/gifs');
   assert(gifLater.length === 0, 'path must be a prefix, not a later segment');
@@ -88,15 +98,15 @@ function runSelfTests() {
       sample.targets[1],
       {
         ...sample.targets[1],
-        id: 'album-special',
-        path: '/album/special',
+        id: 'photo-special',
+        path: '/photo/special',
       },
     ],
   };
-  const special = matchLayoutTargets([longer], 'https://pornhub.com/album/special/1');
-  assert(special.length === 1 && special[0].id === 'album-special', 'longest path wins');
-  const plainAlbum = matchLayoutTargets([longer], 'https://pornhub.com/album/80791185');
-  assert(plainAlbum.length === 1 && plainAlbum[0].id === 'album', 'shorter path stays');
+  const special = matchLayoutTargets([longer], 'https://pornhub.com/photo/special/1');
+  assert(special.length === 1 && special[0].id === 'photo-special', 'longest path wins');
+  const plainPhoto = matchLayoutTargets([longer], 'https://pornhub.com/photo/868704295');
+  assert(plainPhoto.length === 1 && plainPhoto[0].id === 'album', 'shorter path stays');
 
   for (const size of ['small', 'medium', 'large']) {
     for (const showText of [true, false]) {

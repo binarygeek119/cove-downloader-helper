@@ -6,7 +6,7 @@ Copy [`pornhub.lay`](pornhub.lay), save it as `sitename.lay` in this folder, and
 
 ## File shape
 
-`hosts` matches the site, including `www` and subdomains. Each `targets` entry is one path on that host. `path` is the start of the URL path. The query string is ignored. The longest matching path wins, so `/album` matches `/album/80791185` and `/albums`, and a longer path wins when both match.
+`hosts` matches the site, including `www` and subdomains. Each `targets` entry is one path on that host. `path` is the start of the URL path. The query string is ignored. The longest matching path wins, so `/photo` matches `/photo/868704295` and `/photos`, and a longer path wins when both match.
 
 `kind` chooses what this click downloads. It does not change the saved preferred mode.
 

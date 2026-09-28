@@ -64,6 +64,7 @@
     button[data-shape="square"] { border-radius: 0; }
     button[data-shape="rounded"] { border-radius: 8px; }
     button[data-shape="pill"] { border-radius: 999px; }
+    button[data-shape="pill"][data-text="1"] { padding-inline: 18px; }
   `;
   let hoverLink = null;
 
@@ -317,6 +318,28 @@
     host.style.float = floated;
   }
 
+  function stayInButtonRow(host) {
+    const parent = host.parentElement;
+    if (!parent) return;
+    const parentStyle = getComputedStyle(parent);
+    const display = parentStyle.display;
+    if (display === 'flex' || display === 'inline-flex') {
+      host.style.flex = '0 0 auto';
+      host.style.alignSelf = 'center';
+      return;
+    }
+    const parentFloat = parentStyle.float;
+    if ((parentFloat === 'left' || parentFloat === 'right') && parent.childElementCount <= 6) {
+      parent.style.display = 'flex';
+      parent.style.alignItems = 'center';
+      parent.style.flexWrap = 'nowrap';
+      host.style.flex = '0 0 auto';
+      host.style.alignSelf = 'center';
+      return;
+    }
+    alignHostWithFloatedItem(host);
+  }
+
   function layoutHostPlaced(host, anchor, insert) {
     if (!host || !host.isConnected || !anchor || !anchor.isConnected) return false;
     if (insert === 'beforeend' || insert === 'afterbegin') return host.parentElement === anchor;
@@ -413,7 +436,7 @@
       if (!host) return;
       try {
         anchor.insertAdjacentElement(insert, host);
-        alignHostWithFloatedItem(host);
+        stayInButtonRow(host);
       } catch (_) {
         host.remove();
       }
