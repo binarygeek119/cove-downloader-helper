@@ -35,7 +35,7 @@ The job skips with a warning until the four required secrets are set. Mint the r
 | Field | Value |
 | --- | --- |
 | **Name** | Cove Downloader Helper |
-| **Summary** (≤132 chars) | Send page and link URLs to your self-hosted Cove app for yt-dlp and other downloaders. |
+| **Summary** (≤132 chars) | Send the current page or a link to your self-hosted Cove server so it can download the media. |
 | **Category** | Productivity (or Tools) |
 | **Language** | English |
 | **Homepage** | https://github.com/binarygeek119/cove-downloader-helper |
@@ -49,7 +49,7 @@ Cove Downloader Helper connects your browser to your self-hosted Cove media libr
 
 18+ only. This extension is intended for adult users and is not directed at children.
 
-Send the current page or a link to Cove so registered downloaders (yt-dlp, Common Text, Common Audio, Reddit, Direct File, and others) can fetch media into your library.
+Send the current page or a link to your Cove server so it can download the media into your library.
 
 Features:
 • Left-click the toolbar icon to send the current page
@@ -61,7 +61,7 @@ Features:
 
 Requirements:
 • A running Cove instance you control
-• Cove downloaders installed as needed (yt-dlp recommended)
+• The downloaders you use, installed on that Cove server
 
 This extension does not provide a cloud download service. All downloads are handled by your Cove server.
 ```
