@@ -121,6 +121,49 @@ function runSelfTests() {
     }
   }
 
+  const short = structuredClone(sample);
+  short.targets[0].button.height = 10;
+  assert(validateLayout(short).some((error) => error.includes('height')), 'rejects a short height');
+  const fitted = structuredClone(sample);
+  fitted.targets[0].button.height = 40;
+  assert(validateLayout(fitted).length === 0, 'optional height is valid');
+  const fittedMatch = matchLayoutTargets([fitted], 'https://www.pornhub.com/view_video.php?viewkey=1');
+  assert(fittedMatch[0].button.height === 40, 'optional height is kept');
+  const scaled = structuredClone(sample);
+  scaled.targets[0].button.scale = 1.5;
+  scaled.targets[0].button.width = 120;
+  scaled.targets[0].button.fit = true;
+  scaled.targets[0].button.hover = false;
+  scaled.targets[0].anchor.x = 12;
+  scaled.targets[0].anchor.y = 40;
+  scaled.targets[0].button.light = {
+    background: '#ffffff',
+    text: '#111111',
+    icon: '#333333',
+  };
+  scaled.targets[0].button.dark = {
+    background: '#111111',
+    text: '#ffffff',
+    icon: '#dddddd',
+  };
+  scaled.theme = { dark: 'html.dark' };
+  assert(validateLayout(scaled).length === 0, 'scale, fit, hover, offset, and modes are valid');
+  const scaledMatch = matchLayoutTargets([scaled], 'https://www.pornhub.com/view_video.php?viewkey=1');
+  assert(
+    scaledMatch[0].button.scale === 1.5 &&
+      scaledMatch[0].button.width === 120 &&
+      scaledMatch[0].button.fit === true &&
+      scaledMatch[0].button.hover === false &&
+      scaledMatch[0].button.light.text === '#111111' &&
+      scaledMatch[0].button.dark.text === '#ffffff' &&
+      scaledMatch[0].anchor.x === 12 &&
+      scaledMatch[0].anchor.y === 40 &&
+      scaledMatch[0].theme.dark === 'html.dark',
+    'button controls are kept'
+  );
+  scaled.targets[0].button.scale = 4;
+  assert(validateLayout(scaled).some((error) => error.includes('scale')), 'rejects a huge scale');
+
   const broken = structuredClone(sample);
   broken.targets[0].button.size = 'huge';
   broken.targets[0].button.colors.background = 'orange';
@@ -185,6 +228,15 @@ function runSelfTests() {
     'xvideos replaces the download button'
   );
   assert(watch[0].button.colors.background === 'transparent' && watch[0].button.colors.icon === '#a8a8a8', 'xvideos icon');
+  assert(
+    watch[0].button.light.text === '#000000' &&
+      watch[0].button.dark.text === '#ffffff' &&
+      watch[0].button.dark.icon === '#a8a8a8' &&
+      watch[0].button.hover === false &&
+      watch[0].button.fit === true &&
+      watch[0].theme.dark.indexOf('-black-') !== -1,
+    'xvideos text follows light and dark mode'
+  );
   const listing = matchLayoutTargets([xvideos], 'https://www.xvideos.com/');
   assert(listing.length === 0, 'xvideos home is not a watch page');
   const liked = matchLayoutTargets([xvideos], 'https://www.xvideos.com/videos-i-like');
@@ -205,6 +257,7 @@ function runSelfTests() {
   );
   assert(
     xhWatch[0].button.showText === true &&
+      xhWatch[0].button.height === 40 &&
       xhWatch[0].button.colors.background === '#333333' &&
       xhWatch[0].button.colors.icon === '#dadada' &&
       xhWatch[0].button.colors.text === '#dadada',

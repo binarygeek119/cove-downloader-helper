@@ -67,7 +67,7 @@ Turn on **Show stylized download button**. These pages get a button. An image cl
 
 ## XVideos stylized button
 
-Turn on **Show stylized download button**. A watch page whose path starts with `/video.` hides the site download button and puts the Cove button in that slot. The button has no backing color. The icon uses the same gray as the other action icons, and the label is black.
+Turn on **Show stylized download button**. A watch page whose path starts with `/video.` hides the site download button and puts the Cove button in that slot. The button has no backing color. The icon uses the same gray as the other action icons. The label is black in light mode and white in dark mode.
 
 | Page | Path | Button | Sends |
 | --- | --- | --- | --- |

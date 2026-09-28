@@ -192,6 +192,74 @@ function isPlainCssSelector(input, depth) {
   return eof();
 }
 
+function isLayoutScale(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0.5 && value <= 2;
+}
+
+function isLayoutPixels(value, min, max) {
+  return Number.isInteger(value) && value >= min && value <= max;
+}
+
+function validateModeColors(errors, where, modeColors) {
+  if (modeColors === undefined) return;
+  if (!modeColors || typeof modeColors !== 'object' || Array.isArray(modeColors)) {
+    errors.push(`${where} must be an object`);
+    return;
+  }
+  ['background', 'text', 'icon'].forEach((key) => {
+    if (!isLayoutColor(key, modeColors[key])) {
+      errors.push(`${where}.${key} must be a color`);
+    }
+  });
+  ['border', 'hoverBackground'].forEach((key) => {
+    if (modeColors[key] !== undefined && !isLayoutColor(key, modeColors[key])) {
+      errors.push(`${where}.${key} must be a color`);
+    }
+  });
+}
+
+function validateTheme(errors, theme) {
+  if (theme === undefined) return;
+  if (!theme || typeof theme !== 'object' || Array.isArray(theme)) {
+    errors.push('theme must be an object');
+    return;
+  }
+  if (theme.dark === undefined && theme.light === undefined) {
+    errors.push('theme needs a dark or light selector');
+  }
+  ['dark', 'light'].forEach((key) => {
+    if (theme[key] === undefined) return;
+    if (typeof theme[key] !== 'string' || !isPlainCssSelector(theme[key])) {
+      errors.push(`theme.${key} must be a plain CSS selector`);
+    }
+  });
+}
+
+function sanitizeModeColors(modeColors, base) {
+  if (!modeColors) return undefined;
+  return {
+    background: normalizeLayoutColor('background', modeColors.background),
+    text: normalizeLayoutColor('text', modeColors.text),
+    icon: normalizeLayoutColor('icon', modeColors.icon),
+    border: normalizeLayoutColor(
+      'border',
+      modeColors.border !== undefined ? modeColors.border : base.border
+    ),
+    hoverBackground: normalizeLayoutColor(
+      'hoverBackground',
+      modeColors.hoverBackground !== undefined ? modeColors.hoverBackground : base.hoverBackground
+    ),
+  };
+}
+
+function sanitizeTheme(theme) {
+  if (!theme || typeof theme !== 'object') return undefined;
+  const out = {};
+  if (typeof theme.dark === 'string') out.dark = theme.dark.trim();
+  if (typeof theme.light === 'string') out.light = theme.light.trim();
+  return out.dark || out.light ? out : undefined;
+}
+
 function validateLayout(data) {
   const errors = [];
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
@@ -200,6 +268,7 @@ function validateLayout(data) {
   if (data.version !== LAYOUT_VERSION) {
     errors.push('version must be 1');
   }
+  validateTheme(errors, data.theme);
   if (!Array.isArray(data.hosts) || !data.hosts.length) {
     errors.push('hosts must be a non-empty array');
   } else {
@@ -256,6 +325,11 @@ function validateLayout(data) {
       ) {
         errors.push(`${where}.anchor.replace needs insert beforebegin or afterend`);
       }
+      if (anchor.x !== undefined || anchor.y !== undefined) {
+        if (!isLayoutPixels(anchor.x, -4000, 8000) || !isLayoutPixels(anchor.y, -4000, 8000)) {
+          errors.push(`${where}.anchor.x and anchor.y must both be pixel offsets`);
+        }
+      }
     }
     const button = target.button;
     if (!button || typeof button !== 'object') {
@@ -264,6 +338,21 @@ function validateLayout(data) {
     }
     if (!LAYOUT_SIZES.includes(button.size)) {
       errors.push(`${where}.button.size must be small, medium, or large`);
+    }
+    if (button.height !== undefined && !isLayoutPixels(button.height, 16, 160)) {
+      errors.push(`${where}.button.height must be a pixel size from 16 to 160`);
+    }
+    if (button.width !== undefined && !isLayoutPixels(button.width, 16, 480)) {
+      errors.push(`${where}.button.width must be a pixel size from 16 to 480`);
+    }
+    if (button.scale !== undefined && !isLayoutScale(button.scale)) {
+      errors.push(`${where}.button.scale must be a number from 0.5 to 2`);
+    }
+    if (button.fit !== undefined && typeof button.fit !== 'boolean') {
+      errors.push(`${where}.button.fit must be true or false`);
+    }
+    if (button.hover !== undefined && typeof button.hover !== 'boolean') {
+      errors.push(`${where}.button.hover must be true or false`);
     }
     if (typeof button.showText !== 'boolean') {
       errors.push(`${where}.button.showText must be true or false`);
@@ -287,6 +376,8 @@ function validateLayout(data) {
         errors.push(`${where}.button.colors.${key} must be ${allowed}`);
       }
     });
+    validateModeColors(errors, `${where}.button.light`, button.light);
+    validateModeColors(errors, `${where}.button.dark`, button.dark);
   });
 
   return errors;
@@ -301,32 +392,51 @@ function layoutPathMatches(pathname, pathPrefix) {
   return pathname === pathPrefix || pathname.startsWith(pathPrefix);
 }
 
-function sanitizeLayoutTarget(target) {
-  const colors = target.button.colors;
-  return {
+function sanitizeLayoutTarget(target, theme) {
+  const button = target.button;
+  const colors = button.colors;
+  const base = {
+    background: normalizeLayoutColor('background', colors.background),
+    text: normalizeLayoutColor('text', colors.text),
+    icon: normalizeLayoutColor('icon', colors.icon),
+    border: normalizeLayoutColor('border', colors.border),
+    hoverBackground: normalizeLayoutColor('hoverBackground', colors.hoverBackground),
+  };
+  const anchor = {
+    selector: target.anchor.selector.trim(),
+    insert: target.anchor.insert,
+    replace: target.anchor.replace === true,
+  };
+  if (isLayoutPixels(target.anchor.x, -4000, 8000) && isLayoutPixels(target.anchor.y, -4000, 8000)) {
+    anchor.x = target.anchor.x;
+    anchor.y = target.anchor.y;
+  }
+  const cleaned = {
     id: target.id,
     kind: target.kind,
     entity: layoutKindEntity(target.kind),
     path: target.path,
-    anchor: {
-      selector: target.anchor.selector.trim(),
-      insert: target.anchor.insert,
-      replace: target.anchor.replace === true,
-    },
+    anchor,
     button: {
-      size: target.button.size,
-      showText: target.button.showText,
-      label: target.button.label.trim(),
-      shape: target.button.shape,
-      colors: {
-        background: normalizeLayoutColor('background', colors.background),
-        text: normalizeLayoutColor('text', colors.text),
-        icon: normalizeLayoutColor('icon', colors.icon),
-        border: normalizeLayoutColor('border', colors.border),
-        hoverBackground: normalizeLayoutColor('hoverBackground', colors.hoverBackground),
-      },
+      size: button.size,
+      showText: button.showText,
+      label: button.label.trim(),
+      shape: button.shape,
+      scale: isLayoutScale(button.scale) ? button.scale : 1,
+      fit: button.fit === true,
+      hover: button.hover !== false,
+      colors: base,
     },
   };
+  if (isLayoutPixels(button.height, 16, 160)) cleaned.button.height = button.height;
+  if (isLayoutPixels(button.width, 16, 480)) cleaned.button.width = button.width;
+  const light = sanitizeModeColors(button.light, base);
+  const dark = sanitizeModeColors(button.dark, base);
+  if (light) cleaned.button.light = light;
+  if (dark) cleaned.button.dark = dark;
+  const cleanedTheme = sanitizeTheme(theme);
+  if (cleanedTheme) cleaned.theme = cleanedTheme;
+  return cleaned;
 }
 
 function matchLayoutTargets(layouts, pageUrl) {
@@ -344,13 +454,15 @@ function matchLayoutTargets(layouts, pageUrl) {
     if (!layout || validateLayout(layout).length) return;
     if (!layoutHostMatches(parsed.hostname, layout.hosts)) return;
     layout.targets.forEach((target) => {
-      if (layoutPathMatches(pathname, target.path)) matches.push(target);
+      if (layoutPathMatches(pathname, target.path)) matches.push({ target, theme: layout.theme });
     });
   });
   if (!matches.length) return [];
 
-  const longest = matches.reduce((max, target) => Math.max(max, target.path.length), 0);
-  return matches.filter((target) => target.path.length === longest).map(sanitizeLayoutTarget);
+  const longest = matches.reduce((max, item) => Math.max(max, item.target.path.length), 0);
+  return matches
+    .filter((item) => item.target.path.length === longest)
+    .map((item) => sanitizeLayoutTarget(item.target, item.theme));
 }
 
 globalThis.isPlainCssSelector = isPlainCssSelector;

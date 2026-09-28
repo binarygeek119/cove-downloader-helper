@@ -12,6 +12,8 @@
       },
       "button": {
         "size": "medium",
+        "height": 40,
+        "fit": true,
         "showText": true,
         "label": "Download",
         "shape": "rounded",
