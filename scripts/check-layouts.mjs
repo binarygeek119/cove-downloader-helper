@@ -49,6 +49,11 @@ function runSelfTests() {
     'https://www.pornhub.com/view_video.php?viewkey=63e69d5ec09f3'
   );
   assert(video.length === 1 && video[0].kind === 'video' && video[0].entity === 'Video', 'video path');
+  assert(video[0].button.shape === 'pill' && video[0].button.showText === true, 'video pill');
+  assert(
+    video[0].anchor.selector === '.userActions .js_videoSubscribeButton' && video[0].anchor.insert === 'afterend',
+    'video sits beside subscribe'
+  );
 
   const albumUrl = matchLayoutTargets([sample], 'https://www.pornhub.com/album/80791185');
   assert(albumUrl.length === 0, 'album path is not used');

@@ -11,7 +11,7 @@
         "size": "medium",
         "showText": true,
         "label": "Download",
-        "shape": "rounded",
+        "shape": "pill",
         "colors": {
           "background": "#ff9000",
           "text": "#ffffff",
