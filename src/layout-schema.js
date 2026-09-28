@@ -246,6 +246,16 @@ function validateLayout(data) {
       if (!LAYOUT_INSERTS.includes(anchor.insert)) {
         errors.push(`${where}.anchor.insert is invalid`);
       }
+      if (anchor.replace !== undefined && typeof anchor.replace !== 'boolean') {
+        errors.push(`${where}.anchor.replace must be true or false`);
+      }
+      if (
+        anchor.replace === true &&
+        anchor.insert !== 'beforebegin' &&
+        anchor.insert !== 'afterend'
+      ) {
+        errors.push(`${where}.anchor.replace needs insert beforebegin or afterend`);
+      }
     }
     const button = target.button;
     if (!button || typeof button !== 'object') {
@@ -301,6 +311,7 @@ function sanitizeLayoutTarget(target) {
     anchor: {
       selector: target.anchor.selector.trim(),
       insert: target.anchor.insert,
+      replace: target.anchor.replace === true,
     },
     button: {
       size: target.button.size,

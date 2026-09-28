@@ -334,8 +334,31 @@
     return null;
   }
 
+  function restoreReplacedAnchor(node) {
+    const previous = node.getAttribute('data-cove-replaced-display');
+    node.style.removeProperty('display');
+    if (previous) node.style.display = previous;
+    node.removeAttribute('data-cove-replaced');
+    node.removeAttribute('data-cove-replaced-display');
+  }
+
+  function restoreReplacedAnchors(id) {
+    document.querySelectorAll('[data-cove-replaced]').forEach((node) => {
+      if (!id || node.getAttribute('data-cove-replaced') === id) restoreReplacedAnchor(node);
+    });
+  }
+
+  function hideReplacedAnchor(anchor, id) {
+    if (!anchor.hasAttribute('data-cove-replaced-display')) {
+      anchor.setAttribute('data-cove-replaced-display', anchor.style.display || '');
+    }
+    anchor.setAttribute('data-cove-replaced', id);
+    anchor.style.setProperty('display', 'none', 'important');
+  }
+
   function removeLayoutButtons() {
     document.querySelectorAll('[data-cove-layout-id]').forEach((node) => node.remove());
+    restoreReplacedAnchors();
   }
 
   function alignHostWithFloatedItem(host) {
@@ -471,9 +494,13 @@
       if (!anchor) {
         const missing = findLayoutHost(target.id);
         if (missing) missing.remove();
+        restoreReplacedAnchors(target.id);
         return;
       }
       live.add(target.id);
+      const replace = !!(target.anchor && target.anchor.replace);
+      if (replace) hideReplacedAnchor(anchor, target.id);
+      else restoreReplacedAnchors(target.id);
       const existing = findLayoutHost(target.id);
       if (layoutHostPlaced(existing, anchor, insert)) return;
       if (existing) existing.remove();
@@ -487,7 +514,10 @@
       }
     });
     document.querySelectorAll('[data-cove-layout-id]').forEach((node) => {
-      if (!live.has(node.getAttribute('data-cove-layout-id'))) node.remove();
+      const id = node.getAttribute('data-cove-layout-id');
+      if (live.has(id)) return;
+      node.remove();
+      restoreReplacedAnchors(id);
     });
   }
 
