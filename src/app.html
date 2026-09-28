@@ -122,6 +122,11 @@
             Auto-send (skip picker, use preferred defaults)
           </label>
           <label class="switch">
+            <input type="checkbox" id="openQueueOnDownload" />
+            <span class="switch-ui" aria-hidden="true"></span>
+            Open the job queue when a download starts
+          </label>
+          <label class="switch">
             <input type="checkbox" id="queueAllMatches" />
             <span class="switch-ui" aria-hidden="true"></span>
             Queue all matches by default
@@ -147,7 +152,7 @@
             yt-dlp, Common Text, Common Audio, and Reddit as needed.
           </p>
           <p>
-            Left-click the toolbar icon to download the current page. Right-click a link or page to send it.
+            Click the toolbar icon to open the job queue beside the page. Right-click a link or page to send it.
             <strong>Show on all pages</strong> puts the bottom-right download bubble on every page.
             <strong>Show in supported sites</strong> shows that same bubble only on sites Cove downloaders support.
             <strong>Show stylized download button</strong> adds a site-styled button where a layout file matches.

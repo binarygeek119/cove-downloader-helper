@@ -12,12 +12,12 @@ Repository: https://github.com/binarygeek119/cove-downloader-helper
 
 ## Features
 
-- **Left-click** the toolbar icon to download the **current page**
+- **Click** the toolbar icon to open the **job queue** beside the page
 - **Right-click** a link or page → Send to Cove
 - Optional bottom-right download bubble on every page (**Show on all pages**) or only on [supported sites](SUPPORTED_SITES.md) (**Show in supported sites**)
 - Optional site-styled download button from a layout file (**Show stylized download button**). See [src/layouts/README.md](src/layouts/README.md) to add a site.
 - Cove **match** API with quality picker and **Video / Audio / Text** type override
-- **Job Queue** beside the page, with live Cove jobs (progress, cancel, history). Right-click the page and choose **Open job queue**. The page stays open and you can keep browsing.
+- **Job Queue** beside the page, with live Cove jobs (progress, cancel, history). Click the toolbar icon, or right-click the page and choose **Open job queue**. The page stays open and you can keep browsing.
 - **Videos** tab in that side panel when the page has more than one video. Each row shows a thumbnail, title, and length. Check the ones you want, then **Download** or **Download all** to send them to Cove.
 - Settings in-app: Cove URL, optional PAT, preferred mode, auto-send, queue-all, downloader button on every page
 
@@ -52,13 +52,13 @@ Install the community downloaders from the [official extension registry](https:/
 
 ## Usage
 
-- Left-click the icon on a page to open the Download tab for that URL.
+- Click the toolbar icon to open the job queue beside the page.
 - Right-click a link or the page background to send that URL.
 - If the matcher picks the wrong type, use **Type override** (Video / Audio / Text) before sending.
 - Toggle **Show on all pages** to show the bottom-right download bubble on every page.
 - Toggle **Show in supported sites** to show that same bubble only on the [supported sites](SUPPORTED_SITES.md).
 - Toggle **Show stylized download button** to place a site-styled button from [`src/layouts`](src/layouts/README.md). The button’s path chooses video, image, or text for that click.
-- Right-click the page and choose **Open job queue** to dock the queue on the right. It keeps listing current jobs while you move to other pages. You can also open it from the Job Queue tab with **Open beside page**.
+- Click the toolbar icon, or right-click the page and choose **Open job queue**, to dock the queue on the right. It keeps listing current jobs while you move to other pages. You can also open it from the Job Queue tab with **Open beside page**.
 - On a page with more than one video, that side panel shows a **Videos** tab. Pick the clips to send, or use **Download all**. A page with a single video keeps the normal download path and does not show the tab.
 
 ## Build / CI
