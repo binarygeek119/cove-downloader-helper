@@ -16,21 +16,19 @@ Upload:
 
 (or the version printed by the script)
 
-## Automated publish
+## Automatic updates
 
-After the first dashboard upload, `.github/workflows/pack-and-release.yml` publishes later versions. It runs `scripts/publish-chrome-webstore.sh` on pushes to `master`/`main`, and on a manual run unless **Publish the packed zip to the Chrome Web Store** is turned off.
-
-Add these repository secrets ([Chrome Web Store API](https://developer.chrome.com/docs/webstore/using-api)):
+Pushes to `master` run `.github/workflows/pack-and-release.yml`. After the GitHub Release is updated, `scripts/publish-chrome-webstore.sh` uploads the zip when `src/manifest.json` `version` is newer than the store item `okmkahgbcigkpmaagpddnadpffjpibgm`, then submits that version for review. A manual run can turn off **Publish a newer package to the Chrome Web Store**.
 
 | Secret | Value |
 | --- | --- |
 | `CHROME_WEBSTORE_CLIENT_ID` | OAuth client ID |
 | `CHROME_WEBSTORE_CLIENT_SECRET` | OAuth client secret |
 | `CHROME_WEBSTORE_REFRESH_TOKEN` | Refresh token for scope `https://www.googleapis.com/auth/chromewebstore` |
-| `CHROME_EXTENSION_ID` | Store item ID |
 | `CHROME_PUBLISHER_ID` | Publisher ID from Developer Dashboard → Publisher → Settings |
+| `CHROME_EXTENSION_ID` | Optional. Defaults to `okmkahgbcigkpmaagpddnadpffjpibgm` |
 
-The job skips with a warning until every secret is set. Raise `version` in `src/manifest.json` before each publish; the store rejects an upload that does not increase it.
+The job skips with a warning until the four required secrets are set. Mint the refresh token with scope `https://www.googleapis.com/auth/chromewebstore` and call `https://chromewebstore.googleapis.com`. The legacy host `www.googleapis.com/chromewebstore/v1.1` rejects that scope. Raise `version` in `src/manifest.json` before each update.
 
 ## Store listing
 
