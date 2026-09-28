@@ -8,7 +8,7 @@ These controls are not limited to this list:
 - Right-click **Send to Cove** sends a link or the page.
 - **Show on all pages** shows the same bubble on every page.
 
-**Show stylized download button** draws a site-styled button only where a layout file matches. Pornhub and YouPorn have layouts. See [src/layouts/README.md](src/layouts/README.md) to add another site.
+**Show stylized download button** draws a site-styled button only where a layout file matches. Pornhub, YouPorn, and XVideos have layouts. See [src/layouts/README.md](src/layouts/README.md) to add another site.
 
 Cove can also add hosts from the downloaders installed on your instance. Those extra hosts are not listed here. Sending a URL still depends on the downloaders installed in Cove. This page is what the extension treats as a supported site.
 
@@ -40,7 +40,7 @@ Cove can also add hosts from the downloaders installed on your instance. Those e
 | Streamable | `streamable.com` | Yes | No | |
 | Imgur | `imgur.com` | Yes | No | |
 | Pornhub | `pornhub.com` | Yes | Yes | Video, photo, and gif pages. See below. |
-| XVideos | `xvideos.com` | Yes | No | |
+| XVideos | `xvideos.com` | Yes | Yes | Watch pages. The site download button is replaced. See below. |
 | XNXX | `xnxx.com` | Yes | No | |
 | xHamster | `xhamster.com` | Yes | No | |
 | SpankBang | `spankbang.com` | Yes | No | |
@@ -64,6 +64,14 @@ Turn on **Show stylized download button**. These pages get a button. An image cl
 | Gif grid | `/gif` | Icon on each gif block | Image |
 
 `path` is a prefix, so `/photo` also matches `/photos` and `/gif` also matches `/gifs`. `/album/...` does not match.
+
+## XVideos stylized button
+
+Turn on **Show stylized download button**. A watch page whose path starts with `/video.` hides the site download button and puts the Cove button in that slot. The button has no backing color. The icon uses the same gray as the other action icons, and the label is black.
+
+| Page | Path | Button | Sends |
+| --- | --- | --- | --- |
+| Watch | `/video.` | Replaces the site download button | Video |
 
 ## YouPorn stylized button
 

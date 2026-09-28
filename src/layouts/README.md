@@ -26,7 +26,7 @@ Copy [`pornhub.lay`](pornhub.lay), save it as `sitename.lay` in this folder, and
       "id": "watch",
       "kind": "video",
       "path": "/watch",
-      "anchor": { "selector": ".player-actions", "insert": "beforeend" },
+      "anchor": { "selector": ".player-actions .download", "insert": "beforebegin", "replace": true },
       "button": {
         "size": "medium",
         "showText": true,
@@ -56,6 +56,7 @@ Every button uses the extension’s download icon. Pick the rest so it sits in t
 - `label`: short text. It is the visible label when `showText` is true, and the accessible name either way.
 - `insert`: `beforebegin`, `afterbegin`, `beforeend`, or `afterend`
 - `selector`: one plain CSS selector. Empty selectors, HTML, and style blocks are rejected.
+- `replace`: optional `true` or `false`. Omitted means `false`. `true` hides the matched element and puts the Cove button in that slot. The insert must be `beforebegin` or `afterend`, so the button stays a sibling of the hidden control. Turning the stylized button off, or leaving the page, shows the site control again.
 
 `id` is a short unique name inside the file (`video`, `album`, `photo`, `gif`, `gifs` in the sample).
 

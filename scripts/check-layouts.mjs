@@ -50,6 +50,7 @@ function runSelfTests() {
   );
   assert(video.length === 1 && video[0].kind === 'video' && video[0].entity === 'Video', 'video path');
   assert(video[0].button.shape === 'pill' && video[0].button.showText === true, 'video pill');
+  assert(video[0].anchor.replace === false, 'insert beside does not replace');
   assert(
     video[0].anchor.selector === '.userActions .js_videoSubscribeButton' && video[0].anchor.insert === 'afterend',
     'video sits beside subscribe'
@@ -149,6 +150,45 @@ function runSelfTests() {
   assert(cleared[0].button.colors.icon === '#ffffff', 'icon color stays');
   clear.targets[0].button.colors.icon = 'transparent';
   assert(validateLayout(clear).some((error) => error.includes('icon')), 'icon cannot be transparent');
+
+  const replacing = structuredClone(sample);
+  replacing.targets[0].anchor = {
+    selector: '#download',
+    insert: 'beforebegin',
+    replace: true,
+  };
+  assert(validateLayout(replacing).length === 0, 'replace is optional true');
+  const replaced = matchLayoutTargets(
+    [replacing],
+    'https://www.pornhub.com/view_video.php?viewkey=63e69d5ec09f3'
+  );
+  assert(replaced[0].anchor.replace === true && replaced[0].anchor.insert === 'beforebegin', 'replace is kept');
+
+  const badReplace = structuredClone(replacing);
+  badReplace.targets[0].anchor.replace = 'yes';
+  assert(validateLayout(badReplace).some((error) => error.includes('replace')), 'replace must be boolean');
+  badReplace.targets[0].anchor.replace = true;
+  badReplace.targets[0].anchor.insert = 'beforeend';
+  assert(
+    validateLayout(badReplace).some((error) => error.includes('beforebegin')),
+    'replace cannot insert inside the hidden control'
+  );
+
+  const xvideos = JSON.parse(fs.readFileSync(path.join(layoutDir, 'xvideos.lay'), 'utf8'));
+  assert(validateLayout(xvideos).length === 0, 'xvideos layout should be valid');
+  const watch = matchLayoutTargets([xvideos], 'https://www.xvideos.com/video.exampleid/watch');
+  assert(watch.length === 1 && watch[0].id === 'watch' && watch[0].entity === 'Video', 'xvideos watch');
+  assert(
+    watch[0].anchor.selector === '#anc-tst-dl-btn' &&
+      watch[0].anchor.insert === 'beforebegin' &&
+      watch[0].anchor.replace === true,
+    'xvideos replaces the download button'
+  );
+  assert(watch[0].button.colors.background === 'transparent' && watch[0].button.colors.icon === '#a8a8a8', 'xvideos icon');
+  const listing = matchLayoutTargets([xvideos], 'https://www.xvideos.com/');
+  assert(listing.length === 0, 'xvideos home is not a watch page');
+  const liked = matchLayoutTargets([xvideos], 'https://www.xvideos.com/videos-i-like');
+  assert(liked.length === 0, 'videos-i-like does not use the watch prefix');
 }
 
 function checkFiles() {

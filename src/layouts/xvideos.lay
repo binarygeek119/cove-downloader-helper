@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "hosts": ["xvideos.com"],
+  "targets": [
+    {
+      "id": "watch",
+      "kind": "video",
+      "path": "/video.",
+      "anchor": { "selector": "#anc-tst-dl-btn", "insert": "beforebegin", "replace": true },
+      "button": {
+        "size": "medium",
+        "showText": true,
+        "label": "Download",
+        "shape": "square",
+        "colors": {
+          "background": "transparent",
+          "text": "#000000",
+          "icon": "#a8a8a8",
+          "border": "transparent",
+          "hoverBackground": "transparent"
+        }
+      }
+    }
+  ]
+}
