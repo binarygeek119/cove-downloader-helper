@@ -1,0 +1,26 @@
+name: Scan for site issues
+
+on:
+  pull_request:
+  push:
+    branches: [master, main]
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Scan for site issues
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check layout files
+        run: node scripts/check-layouts.mjs
+
+      - name: Scan supported sites
+        run: node scripts/scan-sites.mjs
