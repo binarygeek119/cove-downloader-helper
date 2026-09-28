@@ -38,6 +38,9 @@ jobs:
       - name: Check layout files
         run: node scripts/check-layouts.mjs
 
+      - name: Scan supported sites
+        run: node scripts/scan-sites.mjs
+
       - name: Pack extension
         run: |
           chmod +x ./scripts/pack-extension.sh ./build.sh

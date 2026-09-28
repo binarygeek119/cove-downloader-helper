@@ -78,6 +78,8 @@ For a local install, unzip `cove-downloader-helper-{version}-chrome.zip` (or use
 
 On every push to `master`/`main`, GitHub Actions packs the extension and publishes/updates the GitHub Release `v{version}` with the zip. When the manifest `version` is newer than the Chrome Web Store item, the same workflow uploads that zip and submits it for review.
 
+Pull requests, pushes to `master`/`main`, and a weekly run of [`.github/workflows/scan-sites.yml`](.github/workflows/scan-sites.yml) scan for site issues. The scan fails when `SUPPORTED_SITE_HOSTS`, the layout files, and [SUPPORTED_SITES.md](SUPPORTED_SITES.md) disagree about hosts, direct media extensions, or stylized button paths.
+
 The store item ID is `okmkahgbcigkpmaagpddnadpffjpibgm`. Add these repository secrets before the store update will run:
 
 - `CHROME_WEBSTORE_CLIENT_ID`
