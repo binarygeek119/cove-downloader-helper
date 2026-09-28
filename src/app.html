@@ -10,8 +10,11 @@
   </head>
   <body>
     <header class="app-header">
-      <img class="brand-icon" src="icon.png" alt="" width="28" height="28" />
-      <h1>Cove Downloader Helper</h1>
+      <div class="header-bar">
+        <img class="brand-icon" src="icon.png" alt="" width="28" height="28" />
+        <h1>Cove Downloader Helper</h1>
+        <a id="btn-open-cove" class="header-open-cove" target="_blank" rel="noreferrer" hidden>Open Cove</a>
+      </div>
       <nav class="tabs" role="tablist">
         <button type="button" class="tab active" data-tab="download" role="tab" aria-selected="true">Download</button>
         <button type="button" class="tab" data-tab="queue" role="tab" aria-selected="false">Job Queue</button>
