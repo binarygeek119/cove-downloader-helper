@@ -66,6 +66,7 @@ From the repository root:
 
 ```bash
 node scripts/check-layouts.mjs
+node scripts/scan-sites.mjs
 ```
 
-That check also runs in CI. A file that fails it is ignored by the extension.
+Those checks also run in CI. A layout file that fails the first check is ignored by the extension. The second check keeps this folder, `SUPPORTED_SITE_HOSTS`, and [SUPPORTED_SITES.md](../../SUPPORTED_SITES.md) on the same hosts and paths.
