@@ -63,18 +63,21 @@
     button[data-shape="rounded"] { border-radius: 8px; }
     button[data-shape="pill"] { border-radius: 999px; }
     button[data-shape="pill"][data-text="1"] { padding-inline: 18px; }
-    button[data-stack="1"] {
+    button[data-stack="1"][data-text="0"],
+    button[data-stack="1"][data-text="1"] {
       flex-direction: column;
+      justify-content: center;
       gap: 1px;
       width: auto;
-      min-width: 72px;
+      min-width: 64px;
       height: 36px;
-      padding: 1px 10px 0;
+      padding: 2px 8px;
       font-size: 11px;
       font-weight: 700;
+      line-height: 11px;
     }
-    button[data-stack="1"][data-size="large"] { height: 42px; }
-    button[data-stack="1"] svg { width: 16px; height: 16px; }
+    button[data-stack="1"] svg { width: 14px; height: 14px; }
+    button[data-stack="1"] span { font-size: 11px; line-height: 11px; }
   `;
   let hoverLink = null;
 
