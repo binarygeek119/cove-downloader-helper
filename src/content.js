@@ -70,13 +70,19 @@
       gap: 1px;
       width: auto;
       min-width: 64px;
-      height: 36px;
+      height: auto;
+      min-height: 36px;
       padding: 2px 8px;
       font-size: 11px;
       font-weight: 700;
       line-height: 11px;
     }
-    button[data-stack="1"] svg { width: 14px; height: 14px; }
+    button[data-stack="1"][data-text="0"] svg,
+    button[data-stack="1"][data-text="1"] svg {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 14px;
+    }
     button[data-stack="1"] span { font-size: 11px; line-height: 11px; }
   `;
   let hoverLink = null;
