@@ -196,6 +196,11 @@
     fab.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
+      const albumUrl = eromeAlbumUrl(location.href);
+      if (albumUrl) {
+        openEromeSelector(albumUrl);
+        return;
+      }
       sendUrl(location.href);
     });
 
@@ -234,7 +239,25 @@
     return sites.some((site) => hostMatchesSite(location.hostname, site));
   }
 
+  function isEromeHost() {
+    return hostMatchesSite(location.hostname, 'erome.com');
+  }
+
+  function eromeAlbumUrl(value) {
+    try {
+      const url = new URL(value, location.href);
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+      if (!hostMatchesSite(url.hostname, 'erome.com')) return '';
+      if (!/^\/a\/[^/]+\/?$/i.test(url.pathname)) return '';
+      url.hash = '';
+      return url.href;
+    } catch (_) {
+      return '';
+    }
+  }
+
   function shouldShow() {
+    if (eromeAlbumUrl(location.href)) return true;
     const wantsAll = !!settings.showInPageButtons;
     const wantsSupported = !!settings.showOnSupportedSites;
     if (!wantsAll && !wantsSupported) return false;
@@ -545,6 +568,184 @@
     }
   });
 
+  const EROME_VIDEO_EXT = /\.(?:mp4|m4v|webm|mov|mkv|ogv|ogg|flv)(?:$|\?)/i;
+  let eromeIconQueued = false;
+
+  function eromeVideosFromDocument(doc, baseUrl) {
+    const videos = [];
+    const seen = new Set();
+    doc.querySelectorAll('.media-group').forEach((group) => {
+      let bestUrl = '';
+      let bestRes = -1;
+      let poster = '';
+      group.querySelectorAll('video').forEach((video) => {
+        if (poster) return;
+        const rawPoster = video.getAttribute('poster') || '';
+        if (!rawPoster) return;
+        try {
+          const url = new URL(rawPoster, baseUrl);
+          if (url.protocol === 'http:' || url.protocol === 'https:') poster = url.href;
+        } catch (_) {
+          poster = '';
+        }
+      });
+      group.querySelectorAll('source[src]').forEach((source) => {
+        let href = '';
+        try {
+          const url = new URL(source.getAttribute('src'), baseUrl);
+          if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+          if (!EROME_VIDEO_EXT.test(url.pathname)) return;
+          href = url.href;
+        } catch (_) {
+          return;
+        }
+        const res = parseInt(source.getAttribute('res') || '0', 10) || 0;
+        if (res >= bestRes) {
+          bestRes = res;
+          bestUrl = href;
+        }
+      });
+      if (!bestUrl || seen.has(bestUrl)) return;
+      seen.add(bestUrl);
+      const durationEl = group.querySelector('.duration');
+      const durationText = durationEl ? String(durationEl.textContent || '').replace(/\s+/g, ' ').trim() : '';
+      const duration = /^\d{1,2}:\d{2}(:\d{2})?$/.test(durationText) && !/^0+:00(:00)?$/.test(durationText)
+        ? durationText
+        : '';
+      videos.push({
+        url: bestUrl,
+        title: 'Video ' + (videos.length + 1),
+        thumbnail: poster,
+        duration,
+      });
+    });
+    return videos;
+  }
+
+  async function collectEromeAlbumVideos(albumUrl) {
+    if (eromeAlbumUrl(location.href) === albumUrl) {
+      return eromeVideosFromDocument(document, location.href);
+    }
+    const response = await fetch(albumUrl, { credentials: 'include' });
+    if (!response.ok) throw new Error('Could not open that album.');
+    const html = await response.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return eromeVideosFromDocument(doc, albumUrl);
+  }
+
+  function openEromeSelector(albumUrl) {
+    chrome.runtime.sendMessage({ type: 'open-erome-selector', albumUrl }, (response) => {
+      if (chrome.runtime.lastError || !response || !response.ok) {
+        showToast(
+          (chrome.runtime.lastError && chrome.runtime.lastError.message) || 'Could not open the video selector.',
+          true
+        );
+        return;
+      }
+      const token = response.token;
+      collectEromeAlbumVideos(albumUrl)
+        .then((videos) => {
+          chrome.runtime.sendMessage({ type: 'erome-selector-ready', token, albumUrl, videos }, () => {
+            void chrome.runtime.lastError;
+          });
+        })
+        .catch((error) => {
+          chrome.runtime.sendMessage(
+            {
+              type: 'erome-selector-ready',
+              token,
+              albumUrl,
+              videos: [],
+              error: (error && error.message) || 'Could not read this album.',
+            },
+            () => {
+              void chrome.runtime.lastError;
+            }
+          );
+        });
+    });
+  }
+
+  function ensureEromeHoverStyle() {
+    if (document.getElementById('cove-erome-hover-style')) return;
+    const style = document.createElement('style');
+    style.id = 'cove-erome-hover-style';
+    style.textContent = `
+      [data-cove-erome-album] { opacity: 0; pointer-events: none; }
+      .album:hover [data-cove-erome-album],
+      .album-thumbnail-container:hover [data-cove-erome-album] {
+        opacity: 1;
+        pointer-events: auto;
+      }
+    `;
+    document.documentElement.appendChild(style);
+  }
+
+  function createEromeHoverButton(albumUrl) {
+    const host = document.createElement('span');
+    host.setAttribute('data-cove-erome-album', albumUrl);
+    host.style.position = 'absolute';
+    host.style.right = '8px';
+    host.style.bottom = '8px';
+    host.style.zIndex = '30';
+    const root = host.attachShadow({ mode: 'open' });
+    const iconUrl = chrome.runtime.getURL('cove-icon-32.png');
+    root.innerHTML = `
+      <style>
+        button {
+          width: 32px;
+          height: 32px;
+          padding: 0;
+          border-radius: 999px;
+          border: 1px solid #2a3441;
+          background-color: #171d25;
+          background-image: url("${iconUrl}");
+          background-position: center;
+          background-size: 20px 20px;
+          background-repeat: no-repeat;
+          box-shadow: 0 4px 14px rgba(0,0,0,.35);
+          cursor: pointer;
+        }
+        button:hover { filter: brightness(1.08); }
+      </style>
+      <button type="button" title="Choose videos in this album" aria-label="Choose videos in this album"></button>
+    `;
+    const button = root.querySelector('button');
+    const open = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openEromeSelector(albumUrl);
+    };
+    button.addEventListener('click', open);
+    return host;
+  }
+
+  function placeEromeAlbumIcons() {
+    if (!isEromeHost()) {
+      document.querySelectorAll('[data-cove-erome-album]').forEach((node) => node.remove());
+      return;
+    }
+    document.querySelectorAll('.album-thumbnail-container').forEach((box) => {
+      if (box.querySelector('[data-cove-erome-album]')) return;
+      const link = box.querySelector('a.album-link[href]');
+      const albumUrl = link && eromeAlbumUrl(link.href);
+      if (!albumUrl) return;
+      ensureEromeHoverStyle();
+      const host = createEromeHoverButton(albumUrl);
+      if (getComputedStyle(box).position === 'static') box.style.position = 'relative';
+      box.appendChild(host);
+    });
+  }
+
+  function scheduleEromeAlbumIcons() {
+    if (eromeIconQueued) return;
+    eromeIconQueued = true;
+    requestAnimationFrame(() => {
+      eromeIconQueued = false;
+      placeEromeAlbumIcons();
+    });
+  }
+
   document.addEventListener('pointerover', onPointerOver, true);
   document.addEventListener('pointerout', onPointerOut, true);
 
@@ -556,6 +757,7 @@
     currentTargets = [];
     removeLayoutButtons();
     refreshLayoutButtons();
+    scheduleEromeAlbumIcons();
   };
   window.addEventListener('popstate', notifyUrlChange);
   chrome.runtime.onMessage.addListener((message) => {
@@ -575,6 +777,12 @@
     wrapHistory('replaceState');
   } catch (_) {
     /* some pages freeze history */
+  }
+
+  if (isEromeHost() && document.documentElement) {
+    scheduleEromeAlbumIcons();
+    const eromeObserver = new MutationObserver(() => scheduleEromeAlbumIcons());
+    eromeObserver.observe(document.documentElement, { childList: true, subtree: true });
   }
 
   ensureUi();

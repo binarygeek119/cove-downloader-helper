@@ -20,6 +20,7 @@
   let videoChecked = new Map();
   let videoTimer = null;
   let videoRequest = 0;
+  let eromeSelector = null;
 
   const els = {
     tabs: [...document.querySelectorAll('.tab')],
@@ -81,6 +82,7 @@
   }
 
   function setTab(tab) {
+    if (tab !== 'videos') eromeSelector = null;
     currentTab = tab;
     els.tabs.forEach((button) => {
       const active = button.dataset.tab === tab;
@@ -114,8 +116,10 @@
     if (els.videosHeading) {
       const count = pageVideos.length;
       els.videosHeading.textContent = count
-        ? count + ' video' + (count === 1 ? '' : 's') + ' on this page'
-        : 'Videos on this page';
+        ? count + ' video' + (count === 1 ? '' : 's') + (eromeSelector ? ' in this album' : ' on this page')
+        : eromeSelector
+          ? 'Videos in this album'
+          : 'Videos on this page';
     }
     if (els.tabVideos) {
       els.tabVideos.textContent = pageVideos.length ? 'Videos (' + pageVideos.length + ')' : 'Videos';
@@ -181,7 +185,32 @@
     syncVideoSelectAll();
   }
 
+  function applyEromeSelector(payload) {
+    if (!payload || !payload.albumUrl || !document.body.classList.contains('side-panel')) return;
+    eromeSelector = payload;
+    pageVideoUrl = payload.albumUrl;
+    pageVideos = Array.isArray(payload.videos) ? payload.videos : [];
+    videoChecked = new Map();
+    videoSignature = '';
+    if (els.videoList) els.videoList.replaceChildren();
+    showVideoTab(true);
+    setTab('videos');
+    if (payload.loading) {
+      showStatus(els.videosStatus, 'Loading album videos…');
+      if (els.videosHeading) els.videosHeading.textContent = 'Videos in this album';
+      return;
+    }
+    renderVideoList();
+    if (!pageVideos.length) {
+      showStatus(els.videosStatus, payload.error || 'No videos found in this album.', 'error');
+    } else {
+      showStatus(els.videosStatus, 'Choose the videos to send.');
+    }
+    chrome.storage.session.remove('eromeSelector');
+  }
+
   async function refreshPageVideos() {
+    if (eromeSelector) return;
     const request = ++videoRequest;
     if (!els.tabVideos || !document.body.classList.contains('side-panel')) {
       showVideoTab(false);
@@ -911,7 +940,15 @@
     }
   });
 
+  chrome.runtime.onMessage.addListener((message) => {
+    if (!message || message.type !== 'show-video-selector') return;
+    applyEromeSelector(message);
+  });
+
   chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'session' && changes.eromeSelector && changes.eromeSelector.newValue) {
+      applyEromeSelector(changes.eromeSelector.newValue);
+    }
     if (area !== 'local' || !changes[CLEARED_HISTORY_KEY]) return;
     const ids = changes[CLEARED_HISTORY_KEY].newValue;
     const next = Array.isArray(ids) ? ids.map((id) => String(id)) : [];
@@ -948,6 +985,8 @@
     }
 
     setTab(['download', 'videos', 'queue', 'settings'].includes(currentTab) ? currentTab : 'download');
+    const storedSelector = await sessionGet(['eromeSelector']);
+    if (storedSelector.eromeSelector) applyEromeSelector(storedSelector.eromeSelector);
     startVideoPolling();
 
     const session = await sessionGet([PENDING_KEY]);
