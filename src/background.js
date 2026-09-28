@@ -83,6 +83,13 @@ function applyToolbarIcon() {
 }
 
 const HOST_ORIGINS = ['http://*/*', 'https://*/*'];
+const EROME_MATCHES = [
+  'http://erome.com/*',
+  'https://erome.com/*',
+  'http://*.erome.com/*',
+  'https://*.erome.com/*',
+];
+let eromeSelectorToken = 0;
 
 async function hasBroadHostPermission() {
   return chrome.permissions.contains({
@@ -100,10 +107,10 @@ function requestBroadHostPermission() {
   });
 }
 
-async function injectDownloaderButtonIntoOpenTabs() {
+async function injectDownloaderButtonIntoOpenTabs(matches) {
   let tabs = [];
   try {
-    tabs = await chrome.tabs.query({ url: HOST_ORIGINS });
+    tabs = await chrome.tabs.query({ url: matches || HOST_ORIGINS });
   } catch (_) {
     return;
   }
@@ -128,27 +135,42 @@ function isDuplicateScriptError(error) {
   return /duplicate script id/i.test(message);
 }
 
+function sameMatchList(registered, matches) {
+  const current = (registered && registered.matches) || [];
+  if (current.length !== matches.length) return false;
+  const left = [...current].sort();
+  const right = [...matches].sort();
+  return left.every((value, index) => value === right[index]);
+}
+
 async function syncInPageContentScriptNow() {
   const settings = await getSettings();
   const allowed = await hasBroadHostPermission();
-  const want =
-    (!!settings.showInPageButtons ||
-      !!settings.showOnSupportedSites ||
-      !!settings.showStylizedDownloadButton) &&
-    allowed;
+  const buttons =
+    !!settings.showInPageButtons ||
+    !!settings.showOnSupportedSites ||
+    !!settings.showStylizedDownloadButton;
+  // Album hover icons on Erome stay on even when the other in-page buttons are off.
+  const matches = buttons ? HOST_ORIGINS : EROME_MATCHES;
+  const want = allowed;
 
   const existing = await chrome.scripting.getRegisteredContentScripts({
     ids: [CONTENT_SCRIPT_ID],
   });
-  const registered = existing && existing.length > 0;
+  const registered = existing && existing[0];
+  const current = !!(want && registered && sameMatchList(registered, matches));
 
-  if (want && !registered) {
+  if (registered && !current) {
+    await chrome.scripting.unregisterContentScripts({ ids: [CONTENT_SCRIPT_ID] });
+  }
+
+  if (want && !current) {
     try {
       await chrome.scripting.registerContentScripts([
         {
           id: CONTENT_SCRIPT_ID,
           js: ['content.js'],
-          matches: HOST_ORIGINS,
+          matches,
           runAt: 'document_idle',
           persistAcrossSessions: true,
         },
@@ -158,15 +180,34 @@ async function syncInPageContentScriptNow() {
       // Another call may have registered this id after the check above.
       if (!isDuplicateScriptError(error)) throw error;
     }
-  } else if (!want && registered) {
-    await chrome.scripting.unregisterContentScripts({ ids: [CONTENT_SCRIPT_ID] });
   }
 
   // Registered scripts only run on later navigations. Inject now so every
   // open http(s) page gets the downloader button immediately.
   if (want) {
-    await injectDownloaderButtonIntoOpenTabs();
+    await injectDownloaderButtonIntoOpenTabs(matches);
   }
+}
+
+function eromeSelectorVideos(list) {
+  if (!Array.isArray(list)) return [];
+  const videos = [];
+  list.slice(0, 80).forEach((item) => {
+    if (!item || !isHttpUrl(item.url)) return;
+    const duration = typeof item.duration === 'string' ? item.duration : '';
+    videos.push({
+      url: item.url,
+      title: String(item.title || '').replace(/\s+/g, ' ').trim().slice(0, 80) || 'Video ' + (videos.length + 1),
+      thumbnail: isHttpUrl(item.thumbnail) ? item.thumbnail : '',
+      duration: /^\d{1,2}:\d{2}(:\d{2})?$/.test(duration) ? duration : '',
+    });
+  });
+  return videos;
+}
+
+function publishEromeSelector(payload) {
+  chrome.storage.session.set({ eromeSelector: payload });
+  chrome.runtime.sendMessage(Object.assign({ type: 'show-video-selector' }, payload)).catch(() => {});
 }
 
 // One registration at a time. Overlapping syncs both observe "not registered"
@@ -615,6 +656,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       if (!message || !message.type) {
         sendResponse({ ok: false, error: 'Unknown message' });
+        return;
+      }
+
+      if (message.type === 'open-erome-selector') {
+        if (!isHttpUrl(message.albumUrl)) {
+          sendResponse({ ok: false, error: 'Missing album URL' });
+          return;
+        }
+        eromeSelectorToken += 1;
+        const token = eromeSelectorToken;
+        openJobQueue(sender.tab && sender.tab.windowId);
+        publishEromeSelector({ token, albumUrl: message.albumUrl, loading: true, videos: [] });
+        sendResponse({ ok: true, token });
+        return;
+      }
+
+      if (message.type === 'erome-selector-ready') {
+        if (message.token !== eromeSelectorToken) {
+          sendResponse({ ok: true, ignored: true });
+          return;
+        }
+        publishEromeSelector({
+          token: message.token,
+          albumUrl: message.albumUrl,
+          loading: false,
+          videos: eromeSelectorVideos(message.videos),
+          error: typeof message.error === 'string' ? message.error.slice(0, 180) : '',
+        });
+        sendResponse({ ok: true });
         return;
       }
 

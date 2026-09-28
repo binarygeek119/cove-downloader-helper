@@ -49,7 +49,7 @@ Cove can also add hosts from the downloaders installed on your instance. Those e
 | RedTube | `redtube.com` | Yes | No | |
 | TNAFlix | `tnaflix.com` | Yes | No | |
 | Motherless | `motherless.com` | Yes | No | |
-| Erome | `erome.com` | Yes | No | |
+| Erome | `erome.com` | Yes | No | Hover an album. The bottom-right icon opens the video selector. On an album page, the page’s bottom-right icon does the same. |
 
 ## Pornhub stylized button
 
