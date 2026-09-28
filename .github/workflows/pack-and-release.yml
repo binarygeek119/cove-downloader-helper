@@ -71,10 +71,12 @@ jobs:
           body: |
             Packed Chrome extension (Manifest V3).
 
-            Download `${{ steps.meta.outputs.crx }}` or `${{ steps.meta.outputs.zip }}`, then in Chrome:
+            Unzip `${{ steps.meta.outputs.zip }}`, then in Chrome:
             1. Open `chrome://extensions`
             2. Enable Developer mode
-            3. Drag the CRX onto the page, or unpack the zip and **Load unpacked**
+            3. Choose **Load unpacked** and select the unzipped folder
+
+            `${{ steps.meta.outputs.crx }}` is the same package for an enterprise policy install. Dragging it onto `chrome://extensions` shows `CRX_REQUIRED_PROOF_MISSING` because Chrome requires the Web Store publisher signature.
 
             Version `${{ steps.meta.outputs.version }}` from `src/manifest.json` @ `${{ github.sha }}`.
           files: |
