@@ -6,7 +6,7 @@
       "id": "video",
       "kind": "video",
       "path": "/view_video.php",
-      "anchor": { "selector": ".video-wrapper .video-actions-tabs", "insert": "beforeend" },
+      "anchor": { "selector": ".userActions .js_videoSubscribeButton", "insert": "afterend" },
       "button": {
         "size": "medium",
         "showText": true,
