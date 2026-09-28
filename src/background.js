@@ -238,6 +238,19 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
   }
 });
 
+async function startVideoDownload(settings, url) {
+  let matches = await matchDownloaders(settings, url);
+  if (!matches.length) {
+    matches = [ytDlpFallback(url, 'Video')];
+  }
+  const chosen = applyEntityOverride(url, matches, 'Video');
+  const match = chosen && chosen[0];
+  if (!match) {
+    throw new Error('Video is not supported for this page.');
+  }
+  await startDownload(settings, buildDownloadPayload(match, settings));
+}
+
 async function beginSendToCove(url, tab, placement) {
   if (!isHttpUrl(url)) {
     throw new Error('Only http(s) URLs can be sent to Cove.');
@@ -270,6 +283,13 @@ async function beginSendToCove(url, tab, placement) {
     if (!aligned.length) {
       throw new Error(`${normalizedPlacement.entity} is not supported for this page.`);
     }
+  }
+
+  // A stylized video button already chose Video. Queue that download here
+  // instead of opening the helper to confirm the type.
+  if (normalizedPlacement && normalizedPlacement.entity === 'Video') {
+    await startVideoDownload(settings, url);
+    return { ok: true, started: true };
   }
 
   await setPending(url, tab, normalizedPlacement && normalizedPlacement.entity);
