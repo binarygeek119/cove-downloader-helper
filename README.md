@@ -67,12 +67,15 @@ Install the community downloaders from the [official extension registry](https:/
 ./build.sh --force
 ```
 
-Creates a packed Chrome extension zip in `builds/`:
+Creates a packed Chrome extension in `builds/`:
 
-- `cove-downloader-helper-{version}-chrome.zip` (preferred)
+- `cove-downloader-helper-{version}-chrome.zip` (preferred for the Chrome Web Store)
 - `cove-downloader-helper-{version}.zip` (alias)
+- `cove-downloader-helper-{version}.crx` (CRX3, same package as the zip)
 
-On every push to `master`/`main`, GitHub Actions packs the extension and publishes/updates the GitHub Release `v{version}` with those zip assets. When the manifest `version` is newer than the Chrome Web Store item, the same workflow uploads that zip and submits it for review.
+The first pack writes `builds/cove-downloader-helper.pem` and reuses it so later CRX files keep the same extension ID. That file is a private key. Set `EXTENSION_PEM_PATH` to pack with a different key, including the key for an existing store item.
+
+On every push to `master`/`main`, GitHub Actions packs the extension and publishes/updates the GitHub Release `v{version}` with the zip and CRX. When the manifest `version` is newer than the Chrome Web Store item, the same workflow uploads that zip and submits it for review.
 
 The store item ID is `okmkahgbcigkpmaagpddnadpffjpibgm`. Add these repository secrets before the store update will run:
 
