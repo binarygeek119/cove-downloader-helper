@@ -13,11 +13,11 @@
         "label": "Download",
         "shape": "square",
         "colors": {
-          "background": "#000000",
+          "background": "#1c1c1d",
           "text": "#bbbbbb",
           "icon": "#bbbbbb",
-          "border": "#000000",
-          "hoverBackground": "#000000"
+          "border": "#1c1c1d",
+          "hoverBackground": "#1c1c1d"
         }
       }
     }
