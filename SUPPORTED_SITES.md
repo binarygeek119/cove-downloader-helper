@@ -8,7 +8,7 @@ These controls are not limited to this list:
 - Right-click **Send to Cove** sends a link or the page.
 - **Show on all pages** shows the same bubble on every page.
 
-**Show stylized download button** draws a site-styled button only where a layout file matches. Pornhub, YouPorn, XVideos, and xHamster have layouts. See [src/layouts/README.md](src/layouts/README.md) to add another site.
+**Show stylized download button** draws a site-styled button only where a layout file matches. Pornhub, SpankBang, YouPorn, XVideos, and xHamster have layouts. See [src/layouts/README.md](src/layouts/README.md) to add another site.
 
 Cove can also add hosts from the downloaders installed on your instance. Those extra hosts are not listed here. Sending a URL still depends on the downloaders installed in Cove. This page is what the extension treats as a supported site.
 
@@ -43,7 +43,7 @@ Cove can also add hosts from the downloaders installed on your instance. Those e
 | XVideos | `xvideos.com` | Yes | Yes | Watch pages. The site download button is replaced. See below. |
 | XNXX | `xnxx.com` | Yes | No | |
 | xHamster | `xhamster.com` | Yes | Yes | Watch pages. See below. |
-| SpankBang | `spankbang.com` | Yes | No | |
+| SpankBang | `spankbang.com` | Yes | Yes | Watch pages. See below. |
 | Eporner | `eporner.com` | Yes | No | |
 | YouPorn | `youporn.com` | Yes | Yes | Watch pages. See below. |
 | RedTube | `redtube.com` | Yes | No | |
@@ -80,6 +80,16 @@ Turn on **Show stylized download button**. A watch page whose path starts with `
 | Page | Path | Button | Sends |
 | --- | --- | --- | --- |
 | Watch | `/videos/` | Download after the flag | Video |
+
+## SpankBang stylized button
+
+Turn on **Show stylized download button**. A watch page puts a Download button in the row with Subscribe and Message, immediately before Subscribe. That row already keeps those two controls on the right, so Download takes the open space beside them and they stay on the same line. The button uses the same gold fill and dark label as Subscribe.
+
+| Page | Path | Button | Sends |
+| --- | --- | --- | --- |
+| Watch | `/` | Download before Subscribe | Video |
+
+The watch URL starts with a video id, so the path is `/`. The button is only added when the Subscribe control is on the page.
 
 ## YouPorn stylized button
 

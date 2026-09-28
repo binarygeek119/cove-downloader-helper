@@ -219,6 +219,29 @@ function runSelfTests() {
     'https://ge.xhamster.com/videos/example-xh7BSw0'
   );
   assert(xhSub.length === 1, 'xhamster subdomains match the watch layout');
+
+  const spankbang = JSON.parse(fs.readFileSync(path.join(layoutDir, 'spankbang.lay'), 'utf8'));
+  assert(validateLayout(spankbang).length === 0, 'spankbang layout should be valid');
+  const sbWatch = matchLayoutTargets(
+    [spankbang],
+    'https://spankbang.com/iavy/video/example'
+  );
+  assert(sbWatch.length === 1 && sbWatch[0].id === 'watch' && sbWatch[0].entity === 'Video', 'spankbang watch');
+  assert(
+    sbWatch[0].anchor.selector === '#video-subscription' &&
+      sbWatch[0].anchor.insert === 'beforebegin' &&
+      sbWatch[0].anchor.replace === false,
+    'spankbang button sits before Subscribe'
+  );
+  assert(
+    sbWatch[0].button.showText === true &&
+      sbWatch[0].button.colors.background === '#fdb82e' &&
+      sbWatch[0].button.colors.text === '#440b05' &&
+      sbWatch[0].button.colors.icon === '#440b05',
+    'spankbang button colors'
+  );
+  const sbWww = matchLayoutTargets([spankbang], 'https://www.spankbang.com/abcd/video/example');
+  assert(sbWww.length === 1, 'spankbang www watch matches');
 }
 
 function checkFiles() {

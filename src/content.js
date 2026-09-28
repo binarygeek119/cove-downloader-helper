@@ -375,6 +375,12 @@
     if (floated === 'left' || floated === 'right') host.style.float = floated;
   }
 
+  function dropHostMarginWhenRowHasGap(host, parentStyle) {
+    const gap = parentStyle && (parentStyle.columnGap || parentStyle.gap);
+    if (!gap || gap === 'normal' || gap === '0px') return;
+    host.style.margin = '0';
+  }
+
   function stayInButtonRow(host) {
     const parent = host.parentElement;
     if (!parent) return;
@@ -385,6 +391,7 @@
         host.style.float = '';
         host.style.flex = '0 0 auto';
         host.style.alignSelf = 'center';
+        dropHostMarginWhenRowHasGap(host, getComputedStyle(parent));
       }
       return;
     }
@@ -393,6 +400,7 @@
     if (display === 'flex' || display === 'inline-flex') {
       host.style.flex = '0 0 auto';
       host.style.alignSelf = 'center';
+      dropHostMarginWhenRowHasGap(host, parentStyle);
       return;
     }
     const parentFloat = parentStyle.float;
