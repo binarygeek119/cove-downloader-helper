@@ -42,10 +42,16 @@ cp "$SRC"/*.js "$STAGE/" 2>/dev/null || true
 cp "$SRC"/*.html "$STAGE/" 2>/dev/null || true
 cp "$SRC"/*.css "$STAGE/" 2>/dev/null || true
 cp "$SRC"/*.png "$STAGE/" 2>/dev/null || true
+mkdir -p "$STAGE/layouts"
+cp "$SRC/layouts/"*.lay "$STAGE/layouts/"
+cp "$SRC/layouts/index.json" "$STAGE/layouts/index.json"
 
 # Validate pack contents
 test -f "$STAGE/manifest.json"
 test -f "$STAGE/background.js"
+test -f "$STAGE/layout-schema.js"
+test -f "$STAGE/layouts/index.json"
+test -n "$(find "$STAGE/layouts" -maxdepth 1 -name '*.lay' -print -quit)"
 jq -e '.manifest_version == 3 and .name and .version' "$STAGE/manifest.json" >/dev/null
 
 rm -f "$ZIP_PATH"

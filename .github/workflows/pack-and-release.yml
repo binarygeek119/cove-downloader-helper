@@ -32,6 +32,9 @@ jobs:
           echo "zip=cove-downloader-helper-${VERSION}-chrome.zip" >> "$GITHUB_OUTPUT"
           echo "zip_alias=cove-downloader-helper-${VERSION}.zip" >> "$GITHUB_OUTPUT"
 
+      - name: Check layout files
+        run: node scripts/check-layouts.mjs
+
       - name: Pack extension
         run: |
           chmod +x ./scripts/pack-extension.sh ./build.sh

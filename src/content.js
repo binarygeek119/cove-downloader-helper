@@ -13,9 +13,58 @@
   let settings = {
     showInPageButtons: false,
     showOnSupportedSites: false,
+    showStylizedDownloadButton: false,
     supportedHosts: [],
     coveUrl: '',
   };
+  let currentTargets = [];
+  let layoutObserver = null;
+  let layoutPlaceQueued = false;
+  let layoutRequest = 0;
+  const LAYOUT_HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+  const LAYOUT_BUTTON_STYLE = `
+    :host { display: inline-flex; vertical-align: middle; margin-inline: 6px; }
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      margin: 0;
+      border-style: solid;
+      border-width: 1px;
+      background: var(--cove-bg);
+      color: var(--cove-text);
+      border-color: var(--cove-border);
+      font-family: "Segoe UI", system-ui, sans-serif;
+      line-height: 1;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:hover { background: var(--cove-hover); }
+    svg {
+      fill: none;
+      stroke: var(--cove-icon);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: 0 0 auto;
+    }
+    button[data-size="small"] { height: 28px; font-size: 12px; }
+    button[data-size="medium"] { height: 36px; font-size: 14px; }
+    button[data-size="large"] { height: 44px; font-size: 16px; }
+    button[data-size="small"][data-text="1"] { padding: 0 8px; gap: 4px; }
+    button[data-size="medium"][data-text="1"] { padding: 0 12px; gap: 6px; }
+    button[data-size="large"][data-text="1"] { padding: 0 16px; gap: 8px; }
+    button[data-size="small"][data-text="0"] { width: 28px; padding: 0; }
+    button[data-size="medium"][data-text="0"] { width: 36px; padding: 0; }
+    button[data-size="large"][data-text="0"] { width: 44px; padding: 0; }
+    button[data-size="small"] svg { width: 14px; height: 14px; }
+    button[data-size="medium"] svg { width: 16px; height: 16px; }
+    button[data-size="large"] svg { width: 20px; height: 20px; }
+    button[data-shape="square"] { border-radius: 0; }
+    button[data-shape="rounded"] { border-radius: 8px; }
+    button[data-shape="pill"] { border-radius: 999px; }
+  `;
   let hoverLink = null;
 
   function isEditableTarget(target) {
@@ -34,8 +83,10 @@
     }, 2500);
   }
 
-  function sendUrl(url) {
-    chrome.runtime.sendMessage({ type: 'send-to-cove', url }, (response) => {
+  function sendUrl(url, entity) {
+    const message = { type: 'send-to-cove', url };
+    if (entity === 'Video' || entity === 'Image' || entity === 'Text') message.entity = entity;
+    chrome.runtime.sendMessage(message, (response) => {
       if (chrome.runtime.lastError) {
         showToast(chrome.runtime.lastError.message, true);
         return;
@@ -241,20 +292,200 @@
     hoverLink = null;
   }
 
+  function layoutColor(value) {
+    return typeof value === 'string' && LAYOUT_HEX.test(value) ? value : '';
+  }
+
+  function findLayoutHost(id) {
+    const nodes = document.querySelectorAll('[data-cove-layout-id]');
+    for (const node of nodes) {
+      if (node.getAttribute('data-cove-layout-id') === id) return node;
+    }
+    return null;
+  }
+
+  function removeLayoutButtons() {
+    document.querySelectorAll('[data-cove-layout-id]').forEach((node) => node.remove());
+  }
+
+  function layoutHostPlaced(host, anchor, insert) {
+    if (!host || !host.isConnected || !anchor || !anchor.isConnected) return false;
+    if (insert === 'beforeend' || insert === 'afterbegin') return host.parentElement === anchor;
+    if (insert === 'beforebegin') return host.nextElementSibling === anchor;
+    if (insert === 'afterend') return host.previousElementSibling === anchor;
+    return false;
+  }
+
+  function createLayoutButton(target) {
+    const buttonSpec = target && target.button;
+    const colors = buttonSpec && buttonSpec.colors;
+    const background = layoutColor(colors && colors.background);
+    const text = layoutColor(colors && colors.text);
+    const icon = layoutColor(colors && colors.icon);
+    const border = layoutColor(colors && colors.border);
+    const hover = layoutColor(colors && colors.hoverBackground);
+    const size = buttonSpec && buttonSpec.size;
+    const shape = buttonSpec && buttonSpec.shape;
+    const label = buttonSpec && typeof buttonSpec.label === 'string' ? buttonSpec.label.trim() : '';
+    const entity = target && target.entity;
+    if (!background || !text || !icon || !border || !hover || !label) return null;
+    if (size !== 'small' && size !== 'medium' && size !== 'large') return null;
+    if (shape !== 'square' && shape !== 'rounded' && shape !== 'pill') return null;
+    if (entity !== 'Video' && entity !== 'Image' && entity !== 'Text') return null;
+    if (typeof target.id !== 'string' || !target.id) return null;
+
+    const host = document.createElement('span');
+    host.setAttribute('data-cove-layout-id', target.id);
+    host.style.setProperty('--cove-bg', background);
+    host.style.setProperty('--cove-text', text);
+    host.style.setProperty('--cove-icon', icon);
+    host.style.setProperty('--cove-border', border);
+    host.style.setProperty('--cove-hover', hover);
+
+    const root = host.attachShadow({ mode: 'open' });
+    const style = document.createElement('style');
+    style.textContent = LAYOUT_BUTTON_STYLE;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.size = size;
+    button.dataset.text = buttonSpec.showText ? '1' : '0';
+    button.dataset.shape = shape;
+    button.setAttribute('aria-label', label);
+    button.title = label;
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M12 3v12M12 15l4.5-4.5M12 15l-4.5-4.5M4 21h16');
+    svg.appendChild(path);
+    button.appendChild(svg);
+    if (buttonSpec.showText) {
+      const span = document.createElement('span');
+      span.textContent = label;
+      button.appendChild(span);
+    }
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      sendUrl(location.href, entity);
+    });
+    root.appendChild(style);
+    root.appendChild(button);
+    return host;
+  }
+
+  function placeLayoutButtons(targets) {
+    const live = new Set();
+    (targets || []).forEach((target) => {
+      if (!target || typeof target.id !== 'string') return;
+      const selector = target.anchor && target.anchor.selector;
+      const insert = target.anchor && target.anchor.insert;
+      if (typeof selector !== 'string' || !selector) return;
+      if (insert !== 'beforebegin' && insert !== 'afterbegin' && insert !== 'beforeend' && insert !== 'afterend') {
+        return;
+      }
+      let anchor = null;
+      try {
+        anchor = document.querySelector(selector);
+      } catch (_) {
+        return;
+      }
+      if (!anchor) {
+        const missing = findLayoutHost(target.id);
+        if (missing) missing.remove();
+        return;
+      }
+      live.add(target.id);
+      const existing = findLayoutHost(target.id);
+      if (layoutHostPlaced(existing, anchor, insert)) return;
+      if (existing) existing.remove();
+      const host = createLayoutButton(target);
+      if (!host) return;
+      try {
+        anchor.insertAdjacentElement(insert, host);
+      } catch (_) {
+        host.remove();
+      }
+    });
+    document.querySelectorAll('[data-cove-layout-id]').forEach((node) => {
+      if (!live.has(node.getAttribute('data-cove-layout-id'))) node.remove();
+    });
+  }
+
+  function schedulePlaceLayoutButtons() {
+    if (layoutPlaceQueued) return;
+    layoutPlaceQueued = true;
+    requestAnimationFrame(() => {
+      layoutPlaceQueued = false;
+      if (!settings.showStylizedDownloadButton) {
+        removeLayoutButtons();
+        return;
+      }
+      placeLayoutButtons(currentTargets);
+    });
+  }
+
+  function ensureLayoutObserver() {
+    if (layoutObserver || !document.documentElement) return;
+    layoutObserver = new MutationObserver(() => schedulePlaceLayoutButtons());
+    layoutObserver.observe(document.documentElement, { childList: true, subtree: true });
+  }
+
+  function stopLayoutObserver() {
+    if (!layoutObserver) return;
+    layoutObserver.disconnect();
+    layoutObserver = null;
+  }
+
+  function refreshLayoutButtons() {
+    const requestId = ++layoutRequest;
+    if (!settings.showStylizedDownloadButton) {
+      currentTargets = [];
+      removeLayoutButtons();
+      stopLayoutObserver();
+      return;
+    }
+    ensureLayoutObserver();
+    chrome.runtime.sendMessage({ type: 'get-stylized-layout', url: location.href }, (response) => {
+      if (requestId !== layoutRequest) return;
+      if (!settings.showStylizedDownloadButton) {
+        currentTargets = [];
+        removeLayoutButtons();
+        stopLayoutObserver();
+        return;
+      }
+      if (chrome.runtime.lastError || !response || !response.ok) {
+        currentTargets = [];
+        removeLayoutButtons();
+        return;
+      }
+      currentTargets = Array.isArray(response.targets) ? response.targets : [];
+      placeLayoutButtons(currentTargets);
+    });
+  }
+
   function loadSettings() {
     chrome.runtime.sendMessage({ type: 'get-settings' }, (response) => {
       if (chrome.runtime.lastError || !response || !response.ok) {
         applyVisibility();
+        refreshLayoutButtons();
         return;
       }
       settings = response.settings || settings;
       applyVisibility();
+      refreshLayoutButtons();
     });
   }
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'sync') return;
-    if (changes.showInPageButtons || changes.showOnSupportedSites || changes.coveUrl) {
+    if (
+      changes.showInPageButtons ||
+      changes.showOnSupportedSites ||
+      changes.showStylizedDownloadButton ||
+      changes.coveUrl
+    ) {
       loadSettings();
     }
   });
@@ -267,8 +498,15 @@
     chip.style.display = 'none';
     hoverLink = null;
     applyVisibility();
+    currentTargets = [];
+    removeLayoutButtons();
+    refreshLayoutButtons();
   };
   window.addEventListener('popstate', notifyUrlChange);
+  chrome.runtime.onMessage.addListener((message) => {
+    if (!message || message.type !== 'cove-url-changed' || message.url !== location.href) return;
+    notifyUrlChange();
+  });
   const wrapHistory = (method) => {
     const original = history[method];
     history[method] = function () {

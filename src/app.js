@@ -5,6 +5,8 @@
   let pendingUrl = null;
   let rawMatches = [];
   let currentMatches = [];
+  let layoutEntityLock = '';
+  let activePlacementEntity = '';
   let queueTimer = null;
   let startedJobIds = [];
   let startedTimer = null;
@@ -114,7 +116,12 @@
       autoApplyMetadata: els.autoApplyMetadata.checked,
     };
 
-    if (next.coveUrl || next.showInPageButtons || next.showOnSupportedSites) {
+    if (
+      next.coveUrl ||
+      next.showInPageButtons ||
+      next.showOnSupportedSites ||
+      next.showStylizedDownloadButton
+    ) {
       const granted = await new Promise((resolve) => {
         chrome.runtime.sendMessage({ type: 'request-host-permission' }, (response) => {
           if (chrome.runtime.lastError) {
@@ -127,7 +134,7 @@
       if (!granted) {
         els.settingsSaved.hidden = false;
         els.settingsSaved.textContent =
-          'Settings saved locally, but site access was denied. Grant permission to talk to Cove and show the download bubble.';
+          'Settings saved locally, but site access was denied. Grant permission to talk to Cove and show download buttons.';
         els.settingsSaved.className = 'status error';
         await storageSet(next);
         settings = await getSettings();
@@ -148,7 +155,7 @@
 
   function renderMatches(matches) {
     els.matchList.innerHTML = '';
-    const override = els.entityOverride.value;
+    const override = layoutEntityLock || els.entityOverride.value;
     const pickSettings =
       override && override !== 'auto'
         ? { ...settings, preferredMode: override, queueAllMatches: false }
@@ -200,7 +207,29 @@
     els.downloadActions.hidden = matches.length === 0;
   }
 
+  function showLockedEntity(entity) {
+    const aligned = pickMatches(
+      rawMatches.filter((match) => resolveMatchEntity(match) === entity),
+      { ...settings, preferredMode: entity }
+    );
+    currentMatches = aligned;
+    renderMatches(aligned);
+    if (!aligned.length) {
+      els.downloadActions.hidden = true;
+      showStatus(els.downloadStatus, `${entity} is not supported for this page.`, 'error');
+      return;
+    }
+    showStatus(
+      els.downloadStatus,
+      `${aligned.length} ${entity.toLowerCase()} match${aligned.length === 1 ? '' : 'es'} found.`
+    );
+  }
+
   function applyOverrideAndRender() {
+    if (layoutEntityLock === 'Image' || layoutEntityLock === 'Text') {
+      showLockedEntity(layoutEntityLock);
+      return;
+    }
     const override = els.entityOverride.value || 'auto';
     currentMatches = applyEntityOverride(pendingUrl, rawMatches, override);
     renderMatches(currentMatches);
@@ -241,13 +270,14 @@
     return payloads;
   }
 
-  async function runMatch(url) {
+  async function runMatch(url, placementEntity) {
     pendingUrl = url;
     els.downloadUrl.textContent = url || 'No URL selected.';
     els.matchList.innerHTML = '';
     els.downloadActions.hidden = true;
     els.startedJobs.hidden = true;
-    els.entityOverride.value = 'auto';
+    layoutEntityLock = placementEntity === 'Image' || placementEntity === 'Text' ? placementEntity : '';
+    els.entityOverride.value = placementEntity === 'Video' ? 'Video' : 'auto';
     rawMatches = [];
     currentMatches = [];
     showStatus(els.downloadStatus, '');
@@ -264,14 +294,20 @@
     }
 
     els.downloadLoading.hidden = false;
+    const fallbackMode = placementEntity === 'Video' ? 'Video' : settings.preferredMode;
     try {
       let matches = await matchDownloaders(settings, url);
+      if (layoutEntityLock) {
+        rawMatches = matches;
+        showLockedEntity(layoutEntityLock);
+        return;
+      }
       if (!matches.length) {
-        matches = [ytDlpFallback(url, settings.preferredMode)];
+        matches = [ytDlpFallback(url, fallbackMode)];
         showStatus(els.downloadStatus, 'No downloader matched. Offering yt-dlp fallback.', 'ok');
       } else {
         // Drop Text matches on normal video pages unless preferred mode is Text / text site.
-        if (settings.preferredMode !== 'Text' && !isTextSiteUrl(url)) {
+        if (fallbackMode !== 'Text' && !isTextSiteUrl(url)) {
           const withoutText = matches.filter((m) => resolveMatchEntity(m) !== 'Text');
           if (withoutText.length) matches = withoutText;
         }
@@ -280,7 +316,15 @@
       rawMatches = matches;
       applyOverrideAndRender();
     } catch (error) {
-      rawMatches = [ytDlpFallback(url, settings.preferredMode)];
+      if (layoutEntityLock) {
+        rawMatches = [];
+        currentMatches = [];
+        els.matchList.innerHTML = '';
+        els.downloadActions.hidden = true;
+        showStatus(els.downloadStatus, `${layoutEntityLock} is not supported for this page.`, 'error');
+        return;
+      }
+      rawMatches = [ytDlpFallback(url, fallbackMode)];
       applyOverrideAndRender();
       showStatus(
         els.downloadStatus,
@@ -447,11 +491,12 @@
   });
 
   els.settingsForm.addEventListener('submit', saveSettings);
-  els.btnRematch.addEventListener('click', () => runMatch(pendingUrl));
+  els.btnRematch.addEventListener('click', () => runMatch(pendingUrl, activePlacementEntity));
   els.btnSend.addEventListener('click', sendSelected);
   els.btnGotoQueue.addEventListener('click', () => setTab('queue'));
   els.btnRefreshQueue.addEventListener('click', refreshQueue);
   els.entityOverride.addEventListener('change', () => {
+    layoutEntityLock = '';
     if (!pendingUrl && !rawMatches.length) return;
     applyOverrideAndRender();
     if (els.entityOverride.value === 'auto' && rawMatches.length) {
@@ -489,13 +534,16 @@
     const pending = session[PENDING_KEY];
     if (pending && pending.url) {
       pendingUrl = pending.url;
+      if (pending.entity === 'Video' || pending.entity === 'Image' || pending.entity === 'Text') {
+        activePlacementEntity = pending.entity;
+      }
     }
 
     if (currentTab === 'download') {
       if (pendingUrl) {
-        await runMatch(pendingUrl);
-        if (params.get('auto') === '1' || settings.autoSend) {
-          // Ensure preferred checks then send.
+        await runMatch(pendingUrl, activePlacementEntity);
+        if ((params.get('auto') === '1' || settings.autoSend) && currentMatches.length) {
+          // Ensure preferred checks then send. Image and text stay unsent when unsupported.
           await sendSelected();
         }
       } else {
