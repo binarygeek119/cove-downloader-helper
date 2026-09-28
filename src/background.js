@@ -1,4 +1,4 @@
-importScripts('shared.js', 'layout-schema.js');
+importScripts('shared.js', 'layout-schema.js', 'xhamster-media.js');
 
 const MENU_LINK_ID = 'cove-send-link';
 const MENU_PAGE_ID = 'cove-send-page';
@@ -362,7 +362,7 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
   }
 });
 
-async function startVideoDownload(settings, url) {
+async function startVideoDownload(settings, url, sourceUrl) {
   let matches = await matchDownloaders(settings, url);
   if (!matches.length) {
     matches = [ytDlpFallback(url, 'Video')];
@@ -372,7 +372,44 @@ async function startVideoDownload(settings, url) {
   if (!match) {
     throw new Error('Video is not supported for this page.');
   }
+  if (isHttpUrl(sourceUrl) && sourceUrl !== url) match.sourceUrl = sourceUrl;
   await startDownload(settings, buildDownloadPayload(match, settings));
+}
+
+function sameWatchPath(pageUrl, tabUrl) {
+  try {
+    const page = new URL(pageUrl);
+    const tab = new URL(tabUrl);
+    return page.origin === tab.origin && page.pathname === tab.pathname;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function xhamsterMediaForTab(pageUrl, tab) {
+  if (!isXhamsterWatchUrl(pageUrl) || !tab || tab.id === undefined) return '';
+  let tabUrl = tab.url || '';
+  try {
+    const fresh = await chrome.tabs.get(tab.id);
+    if (fresh && fresh.url) tabUrl = fresh.url;
+  } catch (_) {
+    return '';
+  }
+  if (!sameWatchPath(pageUrl, tabUrl)) return '';
+  let candidates = [];
+  try {
+    const [injected] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      world: 'MAIN',
+      func: collectXhamsterPlayerUrlsInPage,
+    });
+    if (injected && Array.isArray(injected.result)) candidates = injected.result;
+  } catch (_) {
+    return '';
+  }
+  const stream = xhamsterStreamUrl(candidates);
+  if (!stream || !isHttpUrl(stream)) return '';
+  return isVideoFileUrl(stream) ? videoUrlForCove(stream, pageUrl) : withYtDlpReferer(stream, pageUrl);
 }
 
 async function beginSendToCove(url, tab, placement) {
@@ -411,12 +448,14 @@ async function beginSendToCove(url, tab, placement) {
 
   // A stylized video button already chose Video. Queue that download here
   // instead of opening the helper to confirm the type.
+  const mediaUrl = await xhamsterMediaForTab(url, tab);
+  const downloadUrl = mediaUrl || url;
   if (normalizedPlacement && normalizedPlacement.entity === 'Video') {
-    await startVideoDownload(settings, url);
+    await startVideoDownload(settings, downloadUrl, mediaUrl ? url : '');
     return { ok: true, started: true };
   }
 
-  await setPending(url, tab, normalizedPlacement && normalizedPlacement.entity);
+  await setPending(downloadUrl, tab, normalizedPlacement && normalizedPlacement.entity);
   try {
     await syncInPageContentScript();
   } catch (error) {

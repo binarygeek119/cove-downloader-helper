@@ -41,6 +41,9 @@ jobs:
       - name: Check layout files
         run: node scripts/check-layouts.mjs
 
+      - name: Check xHamster player streams
+        run: node scripts/check-xhamster-media.mjs
+
       - name: Pack extension
         run: |
           chmod +x ./scripts/pack-extension.sh ./build.sh

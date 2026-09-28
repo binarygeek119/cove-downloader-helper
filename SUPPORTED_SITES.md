@@ -75,7 +75,7 @@ Turn on **Show stylized download button**. A watch page whose path starts with `
 
 ## xHamster stylized button
 
-Turn on **Show stylized download button**. A watch page whose path starts with `/videos/` gets a Download button in the action row, after the flag. The button uses the same dark fill and light icon as the other controls in that row. The flag stays.
+Turn on **Show stylized download button**. A watch page whose path starts with `/videos/` gets a Download button in the action row, after the flag. The button uses the same dark fill and light icon as the other controls in that row. The flag stays. Download sends the player stream from that open page when the page has one, and uses the watch page as the referer.
 
 | Page | Path | Button | Sends |
 | --- | --- | --- | --- |
