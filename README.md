@@ -69,7 +69,18 @@ Creates a packed Chrome extension zip in `builds/`:
 - `cove-downloader-helper-{version}-chrome.zip` (preferred)
 - `cove-downloader-helper-{version}.zip` (alias)
 
-On every push to `master`/`main`, GitHub Actions packs the extension and publishes/updates the GitHub Release `v{version}` with those zip assets.
+On every push to `master`/`main`, GitHub Actions packs the extension and publishes/updates the GitHub Release `v{version}` with those zip assets. When the manifest `version` is newer than the Chrome Web Store item, the same workflow uploads that zip and submits it for review.
+
+The store item ID is `okmkahgbcigkpmaagpddnadpffjpibgm`. Add these repository secrets before the store update will run:
+
+- `CHROME_WEBSTORE_CLIENT_ID`
+- `CHROME_WEBSTORE_CLIENT_SECRET`
+- `CHROME_WEBSTORE_REFRESH_TOKEN` (scope `https://www.googleapis.com/auth/chromewebstore`)
+- `CHROME_PUBLISHER_ID` (Developer Dashboard → Publisher → Settings)
+
+`CHROME_EXTENSION_ID` is optional. Set it only to publish a different item than `okmkahgbcigkpmaagpddnadpffjpibgm`.
+
+Create the store item once in the Developer Dashboard. Until the secrets exist, the store job logs a warning and succeeds. A push that does not raise `version` leaves the store item as it is. A manual run can turn off **Publish a newer package to the Chrome Web Store**.
 
 ## Credits
 

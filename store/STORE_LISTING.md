@@ -16,6 +16,12 @@ Upload:
 
 (or the version printed by the script)
 
+## Automatic updates
+
+Pushes to `master` run `.github/workflows/pack-and-release.yml`. After the GitHub Release is updated, `scripts/publish-chrome-webstore.sh` uploads the zip when `src/manifest.json` `version` is newer than the store item `okmkahgbcigkpmaagpddnadpffjpibgm`, then submits that version for review.
+
+Repository secrets: `CHROME_WEBSTORE_CLIENT_ID`, `CHROME_WEBSTORE_CLIENT_SECRET`, `CHROME_WEBSTORE_REFRESH_TOKEN`, and `CHROME_PUBLISHER_ID`. The job waits until those are set.
+
 ## Store listing
 
 | Field | Value |
