@@ -74,6 +74,7 @@ function runSelfTests() {
   assert(gifPage.every((target) => target.entity === 'Image' && target.path === '/gif'), 'gif path');
   const gifBar = gifPage.find((target) => target.id === 'gif');
   assert(gifBar.button.size === 'small' && gifBar.button.showText === false, 'gif icon');
+  assert(gifBar.button.colors.background === '#000000' && gifBar.button.colors.icon === '#ffffff', 'gif icon matches the bar');
   assert(
     gifBar.anchor.selector === 'ul.votingWrap > li:has(#favoriteGifButton)' &&
       gifBar.anchor.insert === 'afterend',

@@ -314,20 +314,29 @@
     const parent = host.parentElement;
     const sibling = host.previousElementSibling || host.nextElementSibling;
     if (!parent || parent.tagName !== 'UL' || !sibling || sibling.tagName !== 'LI') return;
-    const floated = getComputedStyle(sibling).float;
-    if (floated !== 'left' && floated !== 'right') return;
-    host.style.float = floated;
     host.style.display = 'flex';
     host.style.alignItems = 'center';
     host.style.justifyContent = 'center';
     host.style.margin = '0';
     const height = sibling.getBoundingClientRect().height;
     if (height > 0) host.style.height = `${Math.round(height)}px`;
+    const floated = getComputedStyle(sibling).float;
+    if (floated === 'left' || floated === 'right') host.style.float = floated;
   }
 
   function stayInButtonRow(host) {
     const parent = host.parentElement;
     if (!parent) return;
+    if (parent.tagName === 'UL') {
+      alignHostWithFloatedItem(host);
+      const display = getComputedStyle(parent).display;
+      if (display === 'flex' || display === 'inline-flex') {
+        host.style.float = '';
+        host.style.flex = '0 0 auto';
+        host.style.alignSelf = 'center';
+      }
+      return;
+    }
     const parentStyle = getComputedStyle(parent);
     const display = parentStyle.display;
     if (display === 'flex' || display === 'inline-flex') {
