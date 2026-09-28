@@ -11,6 +11,9 @@
   let queueTimer = null;
   let startedJobIds = [];
   let startedTimer = null;
+  const CLEARED_HISTORY_KEY = 'coveHelperClearedJobHistory';
+  const CLEARED_HISTORY_LIMIT = 200;
+  let clearedHistoryIds = [];
 
   const els = {
     tabs: [...document.querySelectorAll('.tab')],
@@ -34,6 +37,7 @@
     queueList: document.getElementById('queue-list'),
     historyList: document.getElementById('history-list'),
     btnRefreshQueue: document.getElementById('btn-refresh-queue'),
+    btnClearHistory: document.getElementById('btn-clear-history'),
     btnOpenSideQueue: document.getElementById('btn-open-side-queue'),
     openCoveLink: document.getElementById('open-cove-link'),
     settingsForm: document.getElementById('settings-form'),
@@ -437,7 +441,41 @@
     return Math.max(0, Math.min(100, Math.round(value <= 1 ? value * 100 : value)));
   }
 
-  function renderJobCard(job, { cancellable }) {
+  function localGet(keys) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(keys, (data) => resolve(data || {}));
+    });
+  }
+
+  function localSet(values) {
+    return new Promise((resolve) => {
+      chrome.storage.local.set(values, () => resolve());
+    });
+  }
+
+  async function loadClearedHistory() {
+    const data = await localGet([CLEARED_HISTORY_KEY]);
+    const ids = data[CLEARED_HISTORY_KEY];
+    clearedHistoryIds = Array.isArray(ids) ? ids.map((id) => String(id)) : [];
+  }
+
+  function historyIsCleared(jobId) {
+    return clearedHistoryIds.includes(String(jobId || ''));
+  }
+
+  async function clearHistoryJobs(ids) {
+    for (const id of ids) {
+      const key = String(id || '');
+      if (!key || clearedHistoryIds.includes(key)) continue;
+      clearedHistoryIds.push(key);
+    }
+    if (clearedHistoryIds.length > CLEARED_HISTORY_LIMIT) {
+      clearedHistoryIds = clearedHistoryIds.slice(-CLEARED_HISTORY_LIMIT);
+    }
+    await localSet({ [CLEARED_HISTORY_KEY]: clearedHistoryIds });
+  }
+
+  function renderJobCard(job, { cancellable, clearable }) {
     const pct = progressPercent(job);
     const card = document.createElement('article');
     card.className = 'job-card';
@@ -454,6 +492,11 @@
       ${
         cancellable && (job.status === 'pending' || job.status === 'running')
           ? `<div class="row"><button type="button" class="secondary btn-cancel" data-id="${escapeAttr(job.id)}">Cancel</button></div>`
+          : ''
+      }
+      ${
+        clearable
+          ? `<div class="row"><button type="button" class="secondary btn-clear-history" data-id="${escapeAttr(job.id)}">Clear</button></div>`
           : ''
       }
     `;
@@ -518,14 +561,23 @@
 
       try {
         const history = await getJobHistory(settings);
+        const present = new Set(history.map((job) => String(job && job.id ? job.id : '')));
+        const pruned = clearedHistoryIds.filter((id) => present.has(id));
+        if (pruned.length !== clearedHistoryIds.length) {
+          clearedHistoryIds = pruned;
+          await localSet({ [CLEARED_HISTORY_KEY]: clearedHistoryIds });
+        }
+        const visible = history.filter((job) => !historyIsCleared(job && job.id));
         els.historyList.innerHTML = '';
-        history.slice(0, 20).forEach((job) => {
-          els.historyList.appendChild(renderJobCard(job, { cancellable: false }));
+        visible.slice(0, 20).forEach((job) => {
+          els.historyList.appendChild(renderJobCard(job, { cancellable: false, clearable: true }));
         });
-        if (!history.length) {
+        if (els.btnClearHistory) els.btnClearHistory.hidden = visible.length === 0;
+        if (!visible.length) {
           els.historyList.innerHTML = '<p class="muted">No history yet.</p>';
         }
       } catch (_) {
+        if (els.btnClearHistory) els.btnClearHistory.hidden = true;
         els.historyList.innerHTML = '<p class="muted">History unavailable.</p>';
       }
     } catch (error) {
@@ -561,6 +613,25 @@
   els.btnSend.addEventListener('click', sendSelected);
   els.btnGotoQueue.addEventListener('click', () => setTab('queue'));
   els.btnRefreshQueue.addEventListener('click', refreshQueue);
+  if (els.btnClearHistory) {
+    els.btnClearHistory.addEventListener('click', async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const details = event.currentTarget.closest('details');
+      if (details) details.open = true;
+      if (!settings || !settings.coveUrl) return;
+      els.btnClearHistory.disabled = true;
+      try {
+        const history = await getJobHistory(settings);
+        await clearHistoryJobs(history.map((job) => job && job.id));
+        await refreshQueue();
+      } catch (error) {
+        showStatus(els.queueStatus, error.message || String(error), 'error');
+      } finally {
+        els.btnClearHistory.disabled = false;
+      }
+    });
+  }
   let helperWindowId = null;
   chrome.windows.getCurrent((win) => {
     helperWindowId = win && win.id;
@@ -585,6 +656,30 @@
     }
   });
 
+  els.historyList.addEventListener('click', async (event) => {
+    const button = event.target.closest('.btn-clear-history');
+    if (!button) return;
+    button.disabled = true;
+    try {
+      await clearHistoryJobs([button.dataset.id]);
+      await refreshQueue();
+    } catch (error) {
+      showStatus(els.queueStatus, error.message || String(error), 'error');
+      button.disabled = false;
+    }
+  });
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local' || !changes[CLEARED_HISTORY_KEY]) return;
+    const ids = changes[CLEARED_HISTORY_KEY].newValue;
+    const next = Array.isArray(ids) ? ids.map((id) => String(id)) : [];
+    if (next.length === clearedHistoryIds.length && next.every((id, index) => id === clearedHistoryIds[index])) {
+      return;
+    }
+    clearedHistoryIds = next;
+    if (currentTab === 'queue') refreshQueue();
+  });
+
   els.queueList.addEventListener('click', async (event) => {
     const button = event.target.closest('.btn-cancel');
     if (!button) return;
@@ -600,6 +695,7 @@
 
   async function init() {
     await loadSettings();
+    await loadClearedHistory();
 
     const errorParam = params.get('error');
     if (errorParam) {

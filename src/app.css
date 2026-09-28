@@ -359,9 +359,20 @@ button:disabled {
 }
 
 .history-block summary {
+  position: relative;
   cursor: pointer;
   color: var(--muted);
   margin-bottom: 8px;
+  padding-right: 76px;
+}
+
+.history-block summary button {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px 10px;
+  font-size: 12px;
 }
 
 h2 {
