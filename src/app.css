@@ -473,6 +473,14 @@ button:disabled {
   text-align: left;
 }
 
+.plugin-version + .plugin-version {
+  margin-top: 4px;
+}
+
+.plugin-version a {
+  color: var(--accent);
+}
+
 .history-block {
   margin-top: 16px;
 }

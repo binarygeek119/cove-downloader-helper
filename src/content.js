@@ -42,6 +42,7 @@
       white-space: nowrap;
     }
     button:hover { background: var(--cove-hover); }
+    button[data-hover="0"]:hover { background: var(--cove-bg); }
     svg {
       fill: var(--cove-icon);
       flex: 0 0 auto;
@@ -423,6 +424,156 @@
     return false;
   }
 
+  const LAYOUT_PRESETS = {
+    small: { height: 28, font: 12, icon: 14, pad: 8, gap: 4 },
+    medium: { height: 36, font: 14, icon: 16, pad: 12, gap: 6 },
+    large: { height: 44, font: 16, icon: 20, pad: 16, gap: 8 },
+  };
+
+  function layoutScale(buttonSpec) {
+    const scale = buttonSpec && buttonSpec.scale;
+    if (typeof scale !== 'number' || !Number.isFinite(scale)) return 1;
+    if (scale < 0.5) return 0.5;
+    if (scale > 2) return 2;
+    return scale;
+  }
+
+  function pageLooksDark() {
+    const node = document.body || document.documentElement;
+    if (!node) return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const bg = getComputedStyle(node).backgroundColor || '';
+    const match = bg.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/);
+    if (!match) return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const alpha = match[4] === undefined ? 1 : Number(match[4]);
+    if (!Number.isFinite(alpha) || alpha === 0) {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    const luma = 0.2126 * Number(match[1]) + 0.7152 * Number(match[2]) + 0.0722 * Number(match[3]);
+    return luma < 140;
+  }
+
+  function layoutIsDark(theme) {
+    const darkSelector = theme && theme.dark;
+    const lightSelector = theme && theme.light;
+    let darkMatch = false;
+    let lightMatch = false;
+    try {
+      darkMatch = !!(darkSelector && document.querySelector(darkSelector));
+    } catch (_) {
+      darkMatch = false;
+    }
+    try {
+      lightMatch = !!(lightSelector && document.querySelector(lightSelector));
+    } catch (_) {
+      lightMatch = false;
+    }
+    if (darkMatch && !lightMatch) return true;
+    if (lightMatch && !darkMatch) return false;
+    return pageLooksDark();
+  }
+
+  function colorsForMode(buttonSpec) {
+    const base = (buttonSpec && buttonSpec.colors) || {};
+    const mode = layoutIsDark(buttonSpec && buttonSpec._theme) ? buttonSpec.dark : buttonSpec.light;
+    const overlay = mode || {};
+    return {
+      background: overlay.background || base.background,
+      text: overlay.text || base.text,
+      icon: overlay.icon || base.icon,
+      border: overlay.border || base.border,
+      hoverBackground: overlay.hoverBackground || base.hoverBackground,
+    };
+  }
+
+  function setInlineStyle(node, prop, value) {
+    if (!node) return;
+    if (node.style.getPropertyValue(prop) !== value) node.style.setProperty(prop, value);
+  }
+
+  function sizeSibling(host) {
+    const parent = host && host.parentElement;
+    if (!parent) return null;
+    const candidates = [];
+    const children = parent.children;
+    for (let index = 0; index < children.length; index += 1) {
+      const el = children[index];
+      if (el === host || el.hasAttribute('data-cove-replaced')) continue;
+      if (getComputedStyle(el).display === 'none') continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.height < 16 || rect.height > 80 || rect.width < 8) continue;
+      candidates.push(el);
+    }
+    return (
+      candidates.find((el) => el.tagName === 'BUTTON' || el.tagName === 'A' || el.querySelector('button, a')) ||
+      candidates[0] ||
+      null
+    );
+  }
+
+  function syncLayoutButton(host, target) {
+    const buttonSpec = target && target.button;
+    const button = host && host.shadowRoot && host.shadowRoot.querySelector('button');
+    if (!buttonSpec || !button) return;
+    const themed = Object.assign({}, buttonSpec, { _theme: target.theme });
+    const colors = colorsForMode(themed);
+    setInlineStyle(host, '--cove-bg', colors.background);
+    setInlineStyle(host, '--cove-text', colors.text);
+    setInlineStyle(host, '--cove-icon', colors.icon);
+    setInlineStyle(host, '--cove-border', colors.border);
+    setInlineStyle(host, '--cove-hover', buttonSpec.hover === false ? colors.background : colors.hoverBackground);
+    if (button.dataset.hover !== (buttonSpec.hover === false ? '0' : '1')) {
+      button.dataset.hover = buttonSpec.hover === false ? '0' : '1';
+    }
+    const preset = LAYOUT_PRESETS[buttonSpec.size] || LAYOUT_PRESETS.medium;
+    const scale = layoutScale(buttonSpec);
+    const placed = target.anchor && Number.isInteger(target.anchor.x) && Number.isInteger(target.anchor.y);
+    const customSize = scale !== 1 || !!buttonSpec.height || !!buttonSpec.width || !!buttonSpec.fit || placed;
+    if (!customSize) return;
+    let height = buttonSpec.height || preset.height;
+    let width = buttonSpec.width || 0;
+    if (buttonSpec.fit && !placed) {
+      const sibling = sizeSibling(host);
+      if (sibling) {
+        const rect = sibling.getBoundingClientRect();
+        if (rect.height >= 16) height = Math.round(rect.height);
+        if (!buttonSpec.showText && !buttonSpec.width && rect.width >= 16 && rect.width <= 160) {
+          width = Math.round(rect.width);
+        }
+      }
+    }
+    height = Math.max(16, Math.min(160, Math.round(height * scale)));
+    setInlineStyle(button, 'height', `${height}px`);
+    setInlineStyle(button, 'font-size', `${Math.max(10, Math.round(preset.font * scale))}px`);
+    const svg = button.querySelector('svg');
+    const icon = Math.max(10, Math.round((buttonSpec.showText ? preset.icon : Math.max(preset.icon, 18)) * scale));
+    if (svg) {
+      setInlineStyle(svg, 'width', `${icon}px`);
+      setInlineStyle(svg, 'height', `${icon}px`);
+    }
+    if (buttonSpec.showText) {
+      setInlineStyle(button, 'padding', `0 ${Math.round(preset.pad * scale)}px`);
+      setInlineStyle(button, 'gap', `${Math.round(preset.gap * scale)}px`);
+    }
+    if (width) setInlineStyle(button, 'width', `${Math.max(16, Math.min(480, Math.round(width * scale)))}px`);
+    if (placed) {
+      setInlineStyle(host, 'position', 'fixed');
+      setInlineStyle(host, 'left', `${target.anchor.x}px`);
+      setInlineStyle(host, 'top', `${target.anchor.y}px`);
+      setInlineStyle(host, 'z-index', '2147483646');
+      setInlineStyle(host, 'margin', '0');
+    }
+  }
+
+  let layoutSizeObserver = null;
+
+  function watchLayoutRow(host) {
+    if (!window.ResizeObserver || !host || !host.parentElement) return;
+    if (!layoutSizeObserver) {
+      layoutSizeObserver = new ResizeObserver(() => schedulePlaceLayoutButtons());
+    }
+    layoutSizeObserver.observe(host.parentElement);
+  }
+
   function createLayoutButton(target) {
     const buttonSpec = target && target.button;
     const colors = buttonSpec && buttonSpec.colors;
@@ -433,6 +584,7 @@
     const hover = layoutColor(colors && colors.hoverBackground, true);
     const size = buttonSpec && buttonSpec.size;
     const shape = buttonSpec && buttonSpec.shape;
+    const height = buttonSpec && buttonSpec.height;
     const label = buttonSpec && typeof buttonSpec.label === 'string' ? buttonSpec.label.trim() : '';
     const entity = target && target.entity;
     if (!background || !text || !icon || !border || !hover || !label) return null;
@@ -457,6 +609,9 @@
     button.dataset.size = size;
     button.dataset.text = buttonSpec.showText ? '1' : '0';
     button.dataset.shape = shape;
+    if (Number.isInteger(height) && height >= 24 && height <= 64) {
+      button.style.height = `${height}px`;
+    }
     button.setAttribute('aria-label', label);
     button.title = label;
 
@@ -510,13 +665,20 @@
       if (replace) hideReplacedAnchor(anchor, target.id);
       else restoreReplacedAnchors(target.id);
       const existing = findLayoutHost(target.id);
-      if (layoutHostPlaced(existing, anchor, insert)) return;
+      if (layoutHostPlaced(existing, anchor, insert)) {
+        syncLayoutButton(existing, target);
+        watchLayoutRow(existing);
+        return;
+      }
       if (existing) existing.remove();
       const host = createLayoutButton(target);
       if (!host) return;
       try {
         anchor.insertAdjacentElement(insert, host);
-        stayInButtonRow(host);
+        const placed = target.anchor && Number.isInteger(target.anchor.x) && Number.isInteger(target.anchor.y);
+        if (!placed) stayInButtonRow(host);
+        syncLayoutButton(host, target);
+        watchLayoutRow(host);
       } catch (_) {
         host.remove();
       }
@@ -543,9 +705,28 @@
   }
 
   function ensureLayoutObserver() {
-    if (layoutObserver || !document.documentElement) return;
-    layoutObserver = new MutationObserver(() => schedulePlaceLayoutButtons());
-    layoutObserver.observe(document.documentElement, { childList: true, subtree: true });
+    if (!layoutObserver && document.documentElement) {
+      layoutObserver = new MutationObserver(() => schedulePlaceLayoutButtons());
+      layoutObserver.observe(document.documentElement, { childList: true, subtree: true });
+      layoutObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+      if (document.body) {
+        layoutObserver.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'] });
+      }
+      if (document.head) {
+        layoutObserver.observe(document.head, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['href', 'data-href'],
+        });
+      }
+    }
+    if (!ensureLayoutObserver.resizeBound) {
+      ensureLayoutObserver.resizeBound = true;
+      window.addEventListener('resize', schedulePlaceLayoutButtons);
+      const scheme = window.matchMedia('(prefers-color-scheme: dark)');
+      if (scheme.addEventListener) scheme.addEventListener('change', schedulePlaceLayoutButtons);
+    }
   }
 
   function stopLayoutObserver() {

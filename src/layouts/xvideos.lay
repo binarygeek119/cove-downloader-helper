@@ -1,6 +1,9 @@
 {
   "version": 1,
   "hosts": ["xvideos.com"],
+  "theme": {
+    "dark": "link[href*='-black-'], style[data-href*='-black-']"
+  },
   "targets": [
     {
       "id": "watch",
@@ -9,12 +12,28 @@
       "anchor": { "selector": "#anc-tst-dl-btn", "insert": "beforebegin", "replace": true },
       "button": {
         "size": "medium",
+        "fit": true,
         "showText": true,
         "label": "Download",
         "shape": "square",
+        "hover": false,
         "colors": {
           "background": "transparent",
           "text": "#000000",
+          "icon": "#a8a8a8",
+          "border": "transparent",
+          "hoverBackground": "transparent"
+        },
+        "light": {
+          "background": "transparent",
+          "text": "#000000",
+          "icon": "#a8a8a8",
+          "border": "transparent",
+          "hoverBackground": "transparent"
+        },
+        "dark": {
+          "background": "transparent",
+          "text": "#ffffff",
           "icon": "#a8a8a8",
           "border": "transparent",
           "hoverBackground": "transparent"
