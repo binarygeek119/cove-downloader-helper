@@ -99,7 +99,14 @@ https://github.com/binarygeek119/cove-downloader-helper/blob/master/PRIVACY.md
 | `activeTab` | Temporary access to the tab the user invokes the extension on. |
 | `contextMenus` | “Send link/page to Cove” items in the right-click menu. |
 | `scripting` | Inject the optional downloader button on every page only when the user enables Show on all pages and grants site access. While the side panel is open, read video entries on the active page so the user can pick which ones to send. |
+| `sidePanel` | Open this extension’s job queue in Chrome’s side panel beside the page. See the paste block below. |
 | Host access `http://*/*`, `https://*/*` (optional) | Call the user-configured Cove origin (any host/port they choose, including LAN/localhost) and, when Show on all pages is enabled, inject the downloader button on every site. Also read the active page’s videos for the side-panel picker. Requested at runtime, not granted until the user approves. |
+
+**sidePanel** — Developer Dashboard → Privacy practices → Permission justification. Paste this into the `sidePanel` field:
+
+```text
+Opens this extension's own job queue in Chrome's side panel beside the page the user is already viewing. The panel opens only after the user clicks the toolbar icon, chooses Open job queue, clicks Open beside page, or starts a download with "Open the job queue when a download starts" turned on. It shows progress for downloads they sent to their Cove server and, when a page has more than one video, the list of those videos so they can choose which to send. If no Cove URL is saved yet, the same panel shows Settings so they can enter it. The side panel does not open on its own.
+```
 
 ### Data disclosure
 
@@ -121,5 +128,5 @@ https://github.com/binarygeek119/cove-downloader-helper/blob/master/PRIVACY.md
 - [ ] Store secrets added if GitHub Actions should publish later versions
 - [ ] Privacy policy URL opens publicly
 - [ ] Store icon + at least one 1280×800 screenshot uploaded
-- [ ] Permission justifications pasted into Privacy tab
+- [ ] Permission justifications pasted into Privacy practices, including the `sidePanel` field
 - [ ] Developer account one-time registration fee paid ($5 USD)
