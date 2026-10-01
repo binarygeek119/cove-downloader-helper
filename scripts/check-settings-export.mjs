@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Settings export files are tied to the plugin version. A mismatch, a missing
-// key, or a wrong type must not be accepted.
+// Settings export files can be upgraded from an older plugin version. A newer
+// file, a wrong type, or invalid JSON must not be accepted.
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -66,18 +66,26 @@ function reject(body, message) {
   return result.error;
 }
 
+const older = parseSettingsExport(JSON.stringify({ version: '0.0.1', settings: exported.settings }), version);
+assert(older.ok && older.upgraded, 'older version is upgraded');
 assert(
-  reject({ version: '0.0.1', settings: exported.settings }, 'other version').includes('0.0.1'),
-  'mismatch names the file version'
+  reject(
+    { version: '99.0.0', settings: exported.settings },
+    'newer version'
+  ).includes('99.0.0'),
+  'newer version names the file version'
 );
 assert(reject({ settings: exported.settings }, 'missing version').includes('missing a plugin version'), 'missing version');
 
 const missing = Object.assign({}, exported.settings);
 delete missing.autoSend;
-reject({ version, settings: missing }, 'missing key');
+const missingParsed = parseSettingsExport(JSON.stringify({ version: '0.0.1', settings: missing }), version);
+assert(missingParsed.ok && missingParsed.upgraded, 'older file missing a key is upgraded');
+assert(missingParsed.settings.autoSend === DEFAULT_SETTINGS.autoSend, 'missing key uses default');
 
 const extra = Object.assign({}, exported.settings, { futureFlag: true });
-reject({ version, settings: extra }, 'extra key');
+const extraParsed = parseSettingsExport(JSON.stringify({ version, settings: extra }), version);
+assert(extraParsed.ok && !Object.prototype.hasOwnProperty.call(extraParsed.settings, 'futureFlag'), 'extra key ignored');
 
 const stringBool = Object.assign({}, exported.settings, { autoSend: 'true' });
 reject({ version, settings: stringBool }, 'string boolean');
