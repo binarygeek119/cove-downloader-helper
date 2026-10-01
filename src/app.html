@@ -19,6 +19,7 @@
         <button type="button" class="tab active" data-tab="download" role="tab" aria-selected="true">Download</button>
         <button type="button" class="tab" data-tab="videos" role="tab" aria-selected="false" hidden>Videos</button>
         <button type="button" class="tab" data-tab="queue" role="tab" aria-selected="false">Job Queue</button>
+        <button type="button" class="tab" data-tab="pool" role="tab" aria-selected="false">Pool</button>
         <button type="button" class="tab" data-tab="settings" role="tab" aria-selected="false">Settings</button>
         <button type="button" class="tab" data-tab="about" role="tab" aria-selected="false">About</button>
       </nav>
@@ -27,6 +28,7 @@
     <main>
       <section id="panel-download" class="panel active" role="tabpanel">
         <p id="download-url" class="muted url-line"></p>
+        <p class="muted hotkey-hint">Tip: Press <kbd>Alt</kbd>+<kbd>W</kbd> to send the current page to Cove.</p>
         <label class="override-label">
           Type override
           <select id="entityOverride">
@@ -84,6 +86,23 @@
         </details>
       </section>
 
+      <section id="panel-pool" class="panel" role="tabpanel" hidden>
+        <div class="row between">
+          <h2>Pool</h2>
+          <label class="switch">
+            <input type="checkbox" id="poolModeToggle" />
+            <span class="switch-ui" aria-hidden="true"></span>
+            Download as TXT
+          </label>
+        </div>
+        <p id="pool-status" class="status" hidden></p>
+        <div id="pool-list" class="pool-list"></div>
+        <div class="pool-actions">
+          <button type="button" id="btn-pool-action" class="primary">Send to Cove</button>
+          <button type="button" id="btn-pool-clear" class="secondary">Clear</button>
+        </div>
+      </section>
+
       <section id="panel-settings" class="panel" role="tabpanel" hidden>
         <form id="settings-form">
           <label>
@@ -136,6 +155,16 @@
             <input type="checkbox" id="autoApplyMetadata" />
             <span class="switch-ui" aria-hidden="true"></span>
             Auto-apply metadata
+          </label>
+          <label class="switch">
+            <input type="checkbox" id="closeTabAfterCapture" />
+            <span class="switch-ui" aria-hidden="true"></span>
+            Close tab after sending to Cove
+          </label>
+          <label class="switch">
+            <input type="checkbox" id="poolDownloader" />
+            <span class="switch-ui" aria-hidden="true"></span>
+            Pool downloader (collect URLs instead of sending)
           </label>
           <div class="row">
             <button type="submit" class="primary">Save settings</button>

@@ -28,6 +28,7 @@
       download: document.getElementById('panel-download'),
       videos: document.getElementById('panel-videos'),
       queue: document.getElementById('panel-queue'),
+      pool: document.getElementById('panel-pool'),
       settings: document.getElementById('panel-settings'),
       about: document.getElementById('panel-about'),
     },
@@ -73,6 +74,13 @@
     openQueueOnDownload: document.getElementById('openQueueOnDownload'),
     queueAllMatches: document.getElementById('queueAllMatches'),
     autoApplyMetadata: document.getElementById('autoApplyMetadata'),
+    closeTabAfterCapture: document.getElementById('closeTabAfterCapture'),
+    poolDownloader: document.getElementById('poolDownloader'),
+    poolModeToggle: document.getElementById('poolModeToggle'),
+    poolStatus: document.getElementById('pool-status'),
+    poolList: document.getElementById('pool-list'),
+    btnPoolAction: document.getElementById('btn-pool-action'),
+    btnPoolClear: document.getElementById('btn-pool-clear'),
   };
 
   function showStatus(el, message, kind) {
@@ -346,6 +354,109 @@
     }
   }
 
+  let poolEntries = [];
+
+  async function loadPool() {
+    try {
+      const response = await chrome.runtime.sendMessage({ type: 'get-pool' });
+      poolEntries = (response && response.ok && Array.isArray(response.pool)) ? response.pool : [];
+    } catch (_) {
+      poolEntries = [];
+    }
+    renderPool();
+  }
+
+  function renderPool() {
+    if (!els.poolList) return;
+    els.poolList.innerHTML = '';
+    if (!poolEntries.length) {
+      els.poolList.innerHTML = '<p class="muted">No URLs collected yet.</p>';
+      if (els.btnPoolAction) els.btnPoolAction.disabled = true;
+      return;
+    }
+    if (els.btnPoolAction) els.btnPoolAction.disabled = false;
+    poolEntries.forEach((entry) => {
+      const row = document.createElement('div');
+      row.className = 'pool-entry';
+      const img = document.createElement('img');
+      img.className = 'pool-favicon';
+      img.src = entry.favicon || '';
+      img.alt = '';
+      img.width = 16;
+      img.height = 16;
+      img.addEventListener('error', () => { img.remove(); });
+      const thumb = document.createElement('div');
+      thumb.className = 'pool-thumb';
+      if (entry.thumbnail) {
+        const t = document.createElement('img');
+        t.src = entry.thumbnail;
+        t.alt = '';
+        t.addEventListener('error', () => { t.remove(); });
+        thumb.appendChild(t);
+      }
+      const info = document.createElement('div');
+      info.className = 'pool-info';
+      const title = document.createElement('div');
+      title.className = 'pool-title';
+      title.textContent = entry.title || entry.url;
+      const url = document.createElement('div');
+      url.className = 'pool-url muted';
+      url.textContent = entry.url;
+      info.append(title, url);
+      row.append(img, thumb, info);
+      els.poolList.appendChild(row);
+    });
+  }
+
+  function updatePoolActionLabel() {
+    if (!els.btnPoolAction) return;
+    const downloadMode = els.poolModeToggle && els.poolModeToggle.checked;
+    els.btnPoolAction.textContent = downloadMode ? 'Download as TXT' : 'Send to Cove';
+  }
+
+  async function handlePoolAction() {
+    if (!poolEntries.length) return;
+    const downloadMode = els.poolModeToggle && els.poolModeToggle.checked;
+    if (els.btnPoolAction) els.btnPoolAction.disabled = true;
+    try {
+      if (downloadMode) {
+        await chrome.runtime.sendMessage({ type: 'download-pool-as-txt' });
+        poolEntries = [];
+        renderPool();
+        if (settings && settings.closeTabAfterCapture) {
+          window.close();
+        }
+      } else {
+        const response = await chrome.runtime.sendMessage({ type: 'send-pool-to-cove' });
+        if (!response || response.ok === false) {
+          showStatus(els.poolStatus, (response && response.error) || 'Could not send the pool to Cove.', 'error');
+          if (els.btnPoolAction) els.btnPoolAction.disabled = false;
+          return;
+        }
+        poolEntries = [];
+        renderPool();
+        if (settings && settings.closeTabAfterCapture) {
+          window.close();
+        } else {
+          setTab('queue');
+        }
+      }
+    } catch (error) {
+      showStatus(els.poolStatus, error.message || String(error), 'error');
+      if (els.btnPoolAction) els.btnPoolAction.disabled = false;
+    }
+  }
+
+  async function handlePoolClear() {
+    try {
+      await chrome.runtime.sendMessage({ type: 'clear-pool' });
+      poolEntries = [];
+      renderPool();
+    } catch (error) {
+      showStatus(els.poolStatus, error.message || String(error), 'error');
+    }
+  }
+
   function fillSettingsForm(data) {
     els.coveUrl.value = data.coveUrl || '';
     els.apiToken.value = data.apiToken || '';
@@ -357,6 +468,8 @@
     els.openQueueOnDownload.checked = !!data.openQueueOnDownload;
     els.queueAllMatches.checked = !!data.queueAllMatches;
     els.autoApplyMetadata.checked = !!data.autoApplyMetadata;
+    els.closeTabAfterCapture.checked = !!data.closeTabAfterCapture;
+    els.poolDownloader.checked = !!data.poolDownloader;
     setOpenCoveButton(data.coveUrl);
   }
 
@@ -397,6 +510,8 @@
       openQueueOnDownload: els.openQueueOnDownload.checked,
       queueAllMatches: els.queueAllMatches.checked,
       autoApplyMetadata: els.autoApplyMetadata.checked,
+      closeTabAfterCapture: els.closeTabAfterCapture.checked,
+      poolDownloader: els.poolDownloader.checked,
     };
   }
 
@@ -605,7 +720,15 @@
       await storageSetChecked(next);
       settings = await getSettings();
       fillSettingsForm(settings);
-      showStatus(els.settingsTransferStatus, `Imported settings for version ${pluginVersion()}.`, 'ok');
+      if (parsed.upgraded) {
+        showStatus(
+          els.settingsTransferStatus,
+          `Imported settings from version ${parsed.version || 'an older version'}. Some settings may need to be reviewed to match the current plugin version.`,
+          'ok'
+        );
+      } else {
+        showStatus(els.settingsTransferStatus, `Imported settings for version ${pluginVersion()}.`, 'ok');
+      }
     } catch (error) {
       showStatus(els.settingsTransferStatus, error.message || 'Could not save imported settings.', 'error');
     }
@@ -1004,6 +1127,13 @@
     setTab('queue');
   });
 
+  chrome.runtime.onMessage.addListener((message) => {
+    if (!message || message.type !== 'show-pool') return;
+    if (!document.body.classList.contains('side-panel')) return;
+    setTab('pool');
+    loadPool();
+  });
+
   if (els.videosSelectAll) {
     els.videosSelectAll.addEventListener('change', () => {
       setVideoChecks(els.videosSelectAll.checked);
@@ -1052,6 +1182,9 @@
   });
   els.btnRematch.addEventListener('click', () => runMatch(pendingUrl, activePlacementEntity));
   els.btnSend.addEventListener('click', sendSelected);
+  if (els.btnPoolAction) els.btnPoolAction.addEventListener('click', handlePoolAction);
+  if (els.btnPoolClear) els.btnPoolClear.addEventListener('click', handlePoolClear);
+  if (els.poolModeToggle) els.poolModeToggle.addEventListener('change', updatePoolActionLabel);
   els.btnRefreshQueue.addEventListener('click', refreshQueue);
   if (els.btnClearHistory) {
     els.btnClearHistory.addEventListener('click', async (event) => {
@@ -1155,7 +1288,7 @@
     await loadClearedHistory();
 
     const errorParam = params.get('error');
-    const requestedTab = ['download', 'videos', 'queue', 'settings', 'about'].includes(currentTab) ? currentTab : 'download';
+    const requestedTab = ['download', 'videos', 'queue', 'pool', 'settings', 'about'].includes(currentTab) ? currentTab : 'download';
     const needsSetup = !normalizeCoveUrl(settings && settings.coveUrl);
     if (needsSetup) {
       if (errorParam) showStatus(els.coveTestStatus, errorParam, 'error');
@@ -1187,6 +1320,11 @@
       } else {
         els.downloadUrl.textContent = 'No pending URL. Right-click the page and choose Send page to Cove.';
       }
+    }
+
+    if (currentTab === 'pool') {
+      await loadPool();
+      updatePoolActionLabel();
     }
   }
 

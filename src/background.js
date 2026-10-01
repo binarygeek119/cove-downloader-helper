@@ -45,6 +45,7 @@ function openJobQueue(windowId) {
   if (!chrome.sidePanel || windowId === undefined || windowId === null) return;
   chrome.sidePanel.open({ windowId }).catch((error) => {
     console.error('Could not open job queue', error);
+    openAppWindow('?tab=pool&side=1').catch(() => {});
   });
 }
 
@@ -417,7 +418,68 @@ async function xhamsterMediaForTab(pageUrl, tab) {
   return isVideoFileUrl(stream) ? videoUrlForCove(stream, pageUrl) : withYtDlpReferer(stream, pageUrl);
 }
 
-async function beginSendToCove(url, tab, placement) {
+const POOL_KEY = 'coveHelperPool';
+
+async function getPool() {
+  const data = await sessionGet([POOL_KEY]);
+  return Array.isArray(data[POOL_KEY]) ? data[POOL_KEY] : [];
+}
+
+async function addToPool(entry) {
+  const pool = await getPool();
+  pool.push(entry);
+  await sessionSet({ [POOL_KEY]: pool });
+}
+
+async function clearPool() {
+  await sessionSet({ [POOL_KEY]: [] });
+}
+
+async function fetchPageThumbnail(tab) {
+  if (!tab || tab.id === undefined) return '';
+  try {
+    const [result] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        const og = document.querySelector('meta[property="og:image"]');
+        if (og && og.content) return og.content;
+        const tw = document.querySelector('meta[name="twitter:image"]');
+        if (tw && tw.content) return tw.content;
+        return '';
+      },
+    });
+    return (result && result.result) || '';
+  } catch (_) {
+    return '';
+  }
+}
+
+async function poolUrl(url, tab) {
+  const favicon = (tab && tab.favIconUrl) || `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`;
+  const title = (tab && tab.title) || new URL(url).hostname;
+  const thumbnail = await fetchPageThumbnail(tab);
+  await addToPool({
+    url,
+    addedAt: Date.now(),
+    favicon,
+    title,
+    thumbnail,
+  });
+}
+
+async function closeTabIfEnabled(tab) {
+  if (!tab || tab.id === undefined) return;
+  try {
+    const settings = await getSettings();
+    if (settings.closeTabAfterCapture) {
+      await chrome.tabs.remove(tab.id);
+    }
+  } catch (_) {
+    // Tab may already be closed.
+  }
+}
+
+async function beginSendToCove(url, tab, placement, permissionGranted) {
   if (!isHttpUrl(url)) {
     throw new Error('Only http(s) URLs can be sent to Cove.');
   }
@@ -425,7 +487,7 @@ async function beginSendToCove(url, tab, placement) {
   const normalizedPlacement = placementFromEntity(placement && placement.entity);
 
   // First await must be permissions.request to keep the user gesture.
-  const granted = await requestBroadHostPermission();
+  const granted = permissionGranted !== undefined ? permissionGranted : await requestBroadHostPermission();
   if (!granted) {
     throw new Error('Site access permission is required to talk to Cove and read page URLs.');
   }
@@ -434,6 +496,13 @@ async function beginSendToCove(url, tab, placement) {
   if (!settings.coveUrl) {
     await openAppWindow('?tab=settings');
     return { openedSettings: true };
+  }
+
+  if (settings.poolDownloader) {
+    await poolUrl(url, tab);
+    chrome.runtime.sendMessage({ type: 'show-pool' }).catch(() => {});
+    await closeTabIfEnabled(tab);
+    return { ok: true, pooled: true };
   }
 
   if (normalizedPlacement && normalizedPlacement.strict) {
@@ -457,6 +526,7 @@ async function beginSendToCove(url, tab, placement) {
   const downloadUrl = mediaUrl || url;
   if (normalizedPlacement && normalizedPlacement.entity === 'Video') {
     await startVideoDownload(settings, downloadUrl, mediaUrl ? url : '');
+    await closeTabIfEnabled(tab);
     return { ok: true, started: true };
   }
 
@@ -473,6 +543,7 @@ async function beginSendToCove(url, tab, placement) {
     await openAppWindow('?tab=download');
   }
 
+  await closeTabIfEnabled(tab);
   return { ok: true };
 }
 
@@ -482,6 +553,27 @@ chrome.action.onClicked.addListener((tab) => {
   openJobQueue(tab && tab.windowId);
   notifyJobQueue();
   void requestBroadHostPermission();
+});
+
+chrome.commands.onCommand.addListener((command) => {
+  if (command !== 'send-page-to-cove') return;
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const tab = tabs && tabs[0];
+    if (!tab || !tab.url) return;
+    if (autoSendDownloads) openJobQueueForDownload(tab.windowId);
+    const granted = requestBroadHostPermission();
+    const run = async () => {
+      try {
+        const permissionResult = await granted;
+        await beginSendToCove(tab.url, tab, null, permissionResult);
+      } catch (error) {
+        console.error('Cove keyboard shortcut failed:', error);
+        const message = error && error.message ? error.message : String(error);
+        await openAppWindow('?tab=download&error=' + encodeURIComponent(message));
+      }
+    };
+    void run();
+  });
 });
 
 chrome.contextMenus.onClicked.addListener((item, tab) => {
@@ -499,10 +591,12 @@ chrome.contextMenus.onClicked.addListener((item, tab) => {
     url = tab && tab.url;
   }
   if (url && isHttpUrl(url) && autoSendDownloads) openJobQueueForDownload(tab && tab.windowId);
+  const granted = requestBroadHostPermission();
   const run = async () => {
     try {
       if (!url) return;
-      await beginSendToCove(url, tab);
+      const permissionResult = await granted;
+      await beginSendToCove(url, tab, null, permissionResult);
     } catch (error) {
       console.error('Cove context menu failed:', error);
       const message = error && error.message ? error.message : String(error);
@@ -812,6 +906,69 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       if (message.type === 'open-settings') {
         await openAppWindow('?tab=settings');
+        sendResponse({ ok: true });
+        return;
+      }
+
+      if (message.type === 'get-pool') {
+        const pool = await getPool();
+        sendResponse({ ok: true, pool });
+        return;
+      }
+
+      if (message.type === 'send-pool-to-cove') {
+        const pool = await getPool();
+        const settings = await getSettings();
+        if (!settings.coveUrl) {
+          await openAppWindow('?tab=settings');
+          sendResponse({ ok: false, openedSettings: true });
+          return;
+        }
+        let started = 0;
+        let failed = 0;
+        let error = '';
+        for (const entry of pool) {
+          if (!entry || !isHttpUrl(entry.url)) {
+            failed += 1;
+            continue;
+          }
+          try {
+            let matches = await matchDownloaders(settings, entry.url);
+            if (!matches.length) {
+              matches = [ytDlpFallback(entry.url, settings.preferredMode)];
+            }
+            const chosen = pickMatches(matches, settings);
+            if (!chosen.length) throw new Error('No downloader matched.');
+            for (const match of chosen) {
+              await startDownload(settings, buildDownloadPayload(match, settings));
+              started += 1;
+            }
+          } catch (downloadError) {
+            failed += 1;
+            if (!error) error = downloadError.message || String(downloadError);
+          }
+        }
+        await clearPool();
+        sendResponse({ ok: true, started, failed, error });
+        return;
+      }
+
+      if (message.type === 'download-pool-as-txt') {
+        const pool = await getPool();
+        const text = pool.map((entry) => entry.url).join('\n') + '\n';
+        const dataUrl = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+        await chrome.downloads.download({
+          url: dataUrl,
+          filename: 'cove-pool.txt',
+          saveAs: true,
+        });
+        await clearPool();
+        sendResponse({ ok: true });
+        return;
+      }
+
+      if (message.type === 'clear-pool') {
+        await clearPool();
         sendResponse({ ok: true });
         return;
       }

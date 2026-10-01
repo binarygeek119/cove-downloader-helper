@@ -16,6 +16,9 @@ const DEFAULT_SETTINGS = {
   openQueueOnDownload: false,
   queueAllMatches: false,
   autoApplyMetadata: true,
+  closeTabAfterCapture: false,
+  poolDownloader: false,
+  poolMode: 'send',
 };
 
 function normalizeCoveUrl(url) {
@@ -66,6 +69,9 @@ async function getSettings() {
       data.autoApplyMetadata === undefined
         ? DEFAULT_SETTINGS.autoApplyMetadata
         : !!data.autoApplyMetadata,
+    closeTabAfterCapture: !!data.closeTabAfterCapture,
+    poolDownloader: !!data.poolDownloader,
+    poolMode: data.poolMode === 'download' ? 'download' : 'send',
   };
 }
 
@@ -531,6 +537,19 @@ function settingsExportError(error) {
   return { ok: false, error };
 }
 
+function compareVersions(a, b) {
+  const pa = String(a || '').split('.').map((n) => parseInt(n, 10) || 0);
+  const pb = String(b || '').split('.').map((n) => parseInt(n, 10) || 0);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i += 1) {
+    const na = pa[i] || 0;
+    const nb = pb[i] || 0;
+    if (na < nb) return -1;
+    if (na > nb) return 1;
+  }
+  return 0;
+}
+
 function parseSettingsExport(text, expectedVersion) {
   if (typeof text !== 'string' || !text.trim()) {
     return settingsExportError('Settings file is empty.');
@@ -551,57 +570,60 @@ function parseSettingsExport(text, expectedVersion) {
     return settingsExportError('Settings file is missing a plugin version.');
   }
   const version = String(expectedVersion || '');
-  if (data.version !== version) {
+  const cmp = compareVersions(data.version, version);
+  if (cmp > 0) {
     return settingsExportError(
-      `Settings file is for version ${data.version}. This plugin is version ${version}.`
+      `Settings file is for version ${data.version}, which is newer than this plugin version ${version}. Please update the plugin first.`
     );
   }
+  const upgraded = cmp < 0;
   const source = data.settings;
   if (!source || typeof source !== 'object' || Array.isArray(source)) {
     return settingsExportError('Settings file is missing settings.');
   }
   const keys = Object.keys(DEFAULT_SETTINGS);
-  const sourceKeys = Object.keys(source);
-  if (
-    sourceKeys.length !== keys.length ||
-    keys.some((key) => !Object.prototype.hasOwnProperty.call(source, key))
-  ) {
-    return settingsExportError('Settings file does not match this plugin version.');
-  }
-
   const next = {};
   for (let i = 0; i < keys.length; i += 1) {
     const key = keys[i];
-    const value = source[key];
+    const hasValue = Object.prototype.hasOwnProperty.call(source, key);
+    const value = hasValue ? source[key] : undefined;
     if (typeof DEFAULT_SETTINGS[key] === 'boolean') {
-      if (typeof value !== 'boolean') {
+      if (hasValue && typeof value !== 'boolean') {
         return settingsExportError('Settings file has an invalid value.');
       }
-      next[key] = value;
+      next[key] = hasValue ? value : DEFAULT_SETTINGS[key];
     } else if (key === 'preferredMode') {
-      if (SETTINGS_MODES.indexOf(value) === -1) {
+      if (hasValue && SETTINGS_MODES.indexOf(value) === -1) {
         return settingsExportError('Settings file has an invalid preferred mode.');
       }
-      next[key] = value;
+      next[key] = hasValue ? value : DEFAULT_SETTINGS[key];
     } else if (key === 'coveUrl') {
-      if (typeof value !== 'string' || value.length > SETTINGS_VALUE_MAX_CHARS) {
-        return settingsExportError('Settings file has an invalid Cove URL.');
+      if (hasValue) {
+        if (typeof value !== 'string' || value.length > SETTINGS_VALUE_MAX_CHARS) {
+          return settingsExportError('Settings file has an invalid Cove URL.');
+        }
+        const url = normalizeCoveUrl(value);
+        if (url && !isHttpUrl(url)) {
+          return settingsExportError('Cove URL must start with http:// or https://.');
+        }
+        next.coveUrl = url;
+      } else {
+        next.coveUrl = DEFAULT_SETTINGS[key];
       }
-      const url = normalizeCoveUrl(value);
-      if (url && !isHttpUrl(url)) {
-        return settingsExportError('Cove URL must start with http:// or https://.');
-      }
-      next.coveUrl = url;
     } else if (key === 'apiToken') {
-      if (typeof value !== 'string' || value.length > SETTINGS_VALUE_MAX_CHARS) {
-        return settingsExportError('Settings file has an invalid API token.');
+      if (hasValue) {
+        if (typeof value !== 'string' || value.length > SETTINGS_VALUE_MAX_CHARS) {
+          return settingsExportError('Settings file has an invalid API token.');
+        }
+        next.apiToken = value.trim();
+      } else {
+        next.apiToken = DEFAULT_SETTINGS[key];
       }
-      next.apiToken = value.trim();
     } else {
-      return settingsExportError('Settings file does not match this plugin version.');
+      next[key] = hasValue ? value : DEFAULT_SETTINGS[key];
     }
   }
-  return { ok: true, settings: next };
+  return { ok: true, settings: next, upgraded };
 }
 
 function sameOriginAsCove(pageUrl, coveUrl) {
