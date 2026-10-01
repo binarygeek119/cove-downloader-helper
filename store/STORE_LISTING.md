@@ -100,12 +100,19 @@ https://github.com/binarygeek119/cove-downloader-helper/blob/master/PRIVACY.md
 | `contextMenus` | “Send link/page to Cove” items in the right-click menu. |
 | `scripting` | Inject the optional downloader button on every page only when the user enables Show on all pages and grants site access. While the side panel is open, read video entries on the active page so the user can pick which ones to send. |
 | `sidePanel` | Open this extension’s job queue in Chrome’s side panel beside the page. See the paste block below. |
+| `downloads` | Save a local TXT file of pooled URLs when the user chooses Download as TXT. See the paste block below. |
 | Host access `http://*/*`, `https://*/*` (optional) | Call the user-configured Cove origin (any host/port they choose, including LAN/localhost) and, when Show on all pages is enabled, inject the downloader button on every site. Also read the active page’s videos for the side-panel picker. Requested at runtime, not granted until the user approves. |
 
 **sidePanel** — Developer Dashboard → Privacy practices → Permission justification. Paste this into the `sidePanel` field:
 
 ```text
 Opens this extension's own job queue in Chrome's side panel beside the page the user is already viewing. The panel opens only after the user clicks the toolbar icon, chooses Open job queue, clicks Open beside page, or starts a download with "Open the job queue when a download starts" turned on. It shows progress for downloads they sent to their Cove server and, when a page has more than one video, the list of those videos so they can choose which to send. If no Cove URL is saved yet, the same panel shows Settings so they can enter it. The side panel does not open on its own.
+```
+
+**downloads** — Developer Dashboard → Privacy practices → Permission justification. Paste this into the `downloads` field:
+
+```text
+Used only to save a local text file of URLs the user already collected in this extension's Pool tab. When Pool downloader is on, the user can collect page and link URLs instead of sending them to Cove right away. If they choose Download as TXT and click the Pool action button, the extension writes those URLs (one per line, in the order they were added) to a file named cove-pool.txt through Chrome's Save As dialog. The user picks the location. This permission is not used to download media, crawl the web, or save files in the background.
 ```
 
 ### Data disclosure
@@ -128,5 +135,5 @@ Opens this extension's own job queue in Chrome's side panel beside the page the 
 - [ ] Store secrets added if GitHub Actions should publish later versions
 - [ ] Privacy policy URL opens publicly
 - [ ] Store icon + at least one 1280×800 screenshot uploaded
-- [ ] Permission justifications pasted into Privacy practices, including the `sidePanel` field
+- [ ] Permission justifications pasted into Privacy practices, including the `sidePanel` and `downloads` fields
 - [ ] Developer account one-time registration fee paid ($5 USD)

@@ -1,6 +1,6 @@
 # Privacy Policy — Cove Downloader Helper
 
-**Last updated:** 2026-09-28
+**Last updated:** 2026-10-01
 
 **Extension:** Cove Downloader Helper  
 **Audience:** Adults 18+ only  
@@ -24,7 +24,8 @@ It may process the following information **on your device** and, when you choose
 | Page / link URLs you explicitly send | Sent only to your configured Cove URL | To start a download / match job in Cove |
 | Video title, length, and thumbnail on the current page | Shown in the side panel on your device. The thumbnail may be read from that page. It is not stored or sent to the developer | So you can pick which videos to download when a page has more than one |
 | Video URLs you check and send from that list | Sent only to your configured Cove URL | To start those downloads in Cove |
-| Temporary pending URL in session storage | Browser session only | To open the helper Download tab for the URL you just selected |
+| Pooled page / link URLs you collect | Browser session storage on your device | So you can send them to Cove later or save them as a local TXT file |
+| Pool TXT file (optional) | Saved on your computer through Chrome’s download dialog | Only if you choose Download as TXT in the Pool tab |
 | Job ids you clear from Recent history | Chrome local storage on your browser | So cleared history stays hidden in this extension |
 
 The extension does **not** sell user data, does not use data for advertising, and does not send browsing data to the extension author.
