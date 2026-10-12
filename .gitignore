@@ -1,6 +1,9 @@
 .idea/
 .vscode/
-metube-browser-extension.pem
-builds/*.zip
-builds/*.crx
-builds/*.pem
+node_modules/
+dist/
+builds/
+coverage/
+*.pem
+*.log
+.claude/

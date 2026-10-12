@@ -1,128 +1,108 @@
 # Cove Downloader Helper
 
 <p align="center">
-  <img src="src/icon.png" alt="Cove Downloader Helper logo" width="160" />
+  <img src="src/icons/icon.png" alt="Cove Downloader Helper logo" width="128" />
 </p>
 
-Browser extension that sends page and link URLs to your [Cove](https://github.com/yourcove/cove) instance so registered downloaders can fetch them.
+A Chrome extension that sends pages, links, and videos to your self-hosted [Cove](https://github.com/yourcove/cove) server. Cove matches the address against its installed downloaders (yt-dlp, Reddit, Common Text, Common Audio, and others from the [official extension registry](https://github.com/yourcove/officialextensionregistry)), downloads the media, and imports it into your library.
 
-**This project is a fork of [Chrome MeTube Downloader](https://github.com/Rpsl/metube-browser-extension)** by Rpsl. The original extension queued URLs into [MeTube](https://github.com/alexta69/metube). This fork reworks that idea for Cove’s downloaders API, match/quality picking, in-page controls, and a live job queue.
-
-Repository: https://github.com/binarygeek119/cove-downloader-helper
+Works out of the box with a Cove instance on `http://localhost:5073`. Point it at another URL, and add a personal access token if Cove has authentication on, in Settings.
 
 ## Features
 
-- **Click** the toolbar icon to open the **job queue** beside the page
-- **Right-click** a link or page → Send to Cove
-- Optional bottom-right download bubble on every page (**Show on all pages**) or only on [supported sites](SUPPORTED_SITES.md) (**Show in supported sites**)
-- Optional site-styled download button from a layout file (**Show stylized download button**). See [src/layouts/README.md](src/layouts/README.md) to add a site.
-- Cove **match** API with quality picker and **Video / Audio / Text** type override
-- **Job Queue** beside the page, with live Cove jobs (progress, cancel, history). Click the toolbar icon, or right-click the page and choose **Open job queue**. The page stays open and you can keep browsing.
-- **Videos** tab in that side panel when the page has more than one video. Each row shows a thumbnail, title, and length. Check the ones you want, then **Download** or **Download all** to send them to Cove.
-- Settings in-app: Cove URL, optional PAT, preferred mode, auto-send, queue-all, downloader button on every page
+- **One click, anywhere.** Right-click a page or link, press the keyboard shortcut, or use the floating Cove button on supported sites. Buttons show busy, done, and error states so you always know what happened.
+- **Site-styled buttons.** On sites with a [layout file](src/layouts/README.md), a Download button appears right in the page's own toolbar, styled to match.
+- **Side panel.** Click the toolbar icon for a panel that stays open while you browse: pick the downloader and quality for the current page, watch live job progress, and manage the pool.
+- **Multi-video pages.** When a page embeds several videos, the panel lists them with thumbnails and durations. Select some or all and send them as a single Cove job.
+- **Pool.** Collect URLs as you browse, then send them to Cove as one batch job or save them as a text file. The pool survives browser restarts and closed incognito windows.
+- **No duplicates.** A second click on something already on its way is ignored, Cove's own duplicate check is surfaced as "already in Cove", and batch sends report what was skipped.
+- **Type override.** Ask for video, audio, image, or text when Cove's best guess is not what you meant.
+- **Preferred quality.** Cap downloads at 1080p, 1440p, or 4K, or take the best available. The panel still lets you pick per send.
+- **Settings sync, export, and import.** Settings live in Chrome sync storage. Export them to a file and import them on another machine; 1.x export files are converted automatically.
 
 ## Requirements
 
-1. A running [Cove](https://github.com/yourcove/cove) instance
-2. These downloaders available in Cove:
-   - [Common Audio Downloader](https://github.com/yourcove/officialextensionregistry/blob/main/extensions/cove.community.downloaders.common-audio.json)
-   - [Common Text Downloader](https://github.com/yourcove/officialextensionregistry/blob/main/extensions/cove.community.downloaders.common-text.json)
-   - [Direct File Downloader](https://github.com/yourcove/cove/blob/main/src/Cove.Api/Extensions/DirectFileDownloaderExtension.cs) (built into Cove)
-   - [Reddit Downloader](https://github.com/yourcove/officialextensionregistry/blob/main/extensions/cove.community.downloaders.reddit.json)
-   - [yt-dlp Downloader](https://github.com/yourcove/officialextensionregistry/blob/main/extensions/cove.community.downloaders.ytdlp.json)
+- Chrome 116 or newer (or another Chromium browser with side panel support).
+- A running Cove instance with the downloaders you want installed. yt-dlp covers most video sites.
 
-Install the community downloaders from the [official extension registry](https://github.com/yourcove/officialextensionregistry). Direct File Downloader ships with Cove.
+## Install
+
+**Chrome Web Store:** [Cove Downloader Helper](https://chrome.google.com/webstore/detail/okmkahgbcigkpmaagpddnadpffjpibgm).
+
+**From source:**
+
+```bash
+npm install
+npm run build
+```
+
+Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and choose the `dist` folder.
 
 ## Setup
 
-1. Install and start Cove; install the required community downloaders listed above.
-2. Load this extension (see below).
-3. Open **Settings** (extension options, or the Settings tab in the helper window).
-4. Set your **Cove URL** (example: `http://127.0.0.1:5000`).
-5. If Cove auth is enabled, paste a **PAT** (`cove_pat_…`) with permission to run jobs.
-
-## Installation from source
-
-1. Clone or download this repository  
-   `https://github.com/binarygeek119/cove-downloader-helper`
-2. Open [chrome://extensions](chrome://extensions/)
-3. Enable **Developer mode**
-4. Click **Load unpacked**
-5. Choose the `src` folder
+1. Click the toolbar icon. The panel opens on the queue and shows the connection status in the header.
+2. If Cove is not on `http://localhost:5073`, open **Settings** in the panel, enter the Cove URL and (if needed) a token, and click **Save**. **Test connection** confirms Cove answers and lists its downloaders.
+3. Grant site access when Chrome asks. The extension needs it to reach Cove and to read the page you send.
 
 ## Usage
 
-- Click the toolbar icon to open the job queue beside the page.
-- Right-click a link or the page background to send that URL.
-- If the matcher picks the wrong type, use **Type override** (Video / Audio / Text) before sending.
-- Toggle **Show on all pages** to show the bottom-right download bubble on every page.
-- Toggle **Show in supported sites** to show that same bubble only on the [supported sites](SUPPORTED_SITES.md).
-- Toggle **Show stylized download button** to place a site-styled button from [`src/layouts`](src/layouts/README.md). The button’s path chooses video, image, or text for that click.
-- Click the toolbar icon, or right-click the page and choose **Open job queue**, to dock the queue on the right. It keeps listing current jobs while you move to other pages. You can also open it from the Job Queue tab with **Open beside page**.
-- On a page with more than one video, that side panel shows a **Videos** tab. Pick the clips to send, or use **Download all**. A page with a single video keeps the normal download path and does not show the tab.
+| Action                                                              | What it does                                                                                                                                                                                                  |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Toolbar icon                                                        | Opens the side panel on the queue.                                                                                                                                                                            |
+| Right-click → **Send page to Cove** / **Send link to Cove**         | Sends immediately with the best match.                                                                                                                                                                        |
+| Right-click → **Add page to Cove pool** / **Add link to Cove pool** | Adds to the pool without sending.                                                                                                                                                                             |
+| Keyboard shortcut (default `Alt+Shift+C`)                           | Sends the current page. Two more shortcuts, unbound by default, add the page to the pool and send the pool to Cove. Change them at `chrome://extensions/shortcuts`; the Settings tab shows the live bindings. |
+| Floating Cove button (bottom right)                                 | Sends the page. Hover a link to get a chip that sends that link instead.                                                                                                                                      |
+| Site-styled Download button                                         | Sends the page as video, image, or text, as the layout file says.                                                                                                                                             |
+| Panel → **Download**                                                | Shows the matches for the current page or any address you paste, with a type override and quality picker. Lists embedded videos when a page has more than one.                                                |
+| Panel → **Queue**                                                   | Live progress for running jobs, with cancel, and recent history.                                                                                                                                              |
+| Panel → **Pool**                                                    | Review collected URLs, remove some, send all as one job, or save as `.txt`.                                                                                                                                   |
 
-## Build / CI
+**Pool mode** (Settings or the Pool tab) makes the in-page buttons add to the pool instead of sending. The context menu and shortcuts always offer both.
+
+**Confirm before sending** opens the panel to review the match and quality instead of sending right away.
+
+See [SUPPORTED_SITES.md](SUPPORTED_SITES.md) for where the floating and site-styled buttons appear.
+
+## Development
+
+The extension is TypeScript, React 19, Tailwind 4, and Vite, with the same tooling as the Cove UI (oxlint, oxfmt, vitest).
 
 ```bash
-./scripts/pack-extension.sh --force
-# or
-./build.sh --force
+npm install
+npm run dev:ui      # panel in a normal browser tab with a Chrome API shim
+npm run dev         # rebuild dist/ on every change, for loading unpacked in Chrome
+npm run check       # typecheck, lint, format check, tests, vulnerability scan
+npm run build       # production build into dist/
+npm run pack        # build and zip for the Chrome Web Store
 ```
 
-Creates a packed Chrome extension in `builds/`:
+Layout of `src/`:
 
-- `cove-downloader-helper-{version}-chrome.zip` (preferred for the Chrome Web Store)
-- `cove-downloader-helper-{version}.zip` (alias)
+| Folder        | Runs in                     | Purpose                                                                                                            |
+| ------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `background/` | Service worker              | The single send pipeline, pool, job tracking, context menus, shortcuts, content-script registration.               |
+| `content/`    | Web pages                   | Floating button, link chip, toasts, site-styled buttons, Erome album icons, embedded-video collector.              |
+| `app/`        | Side panel and options page | React UI.                                                                                                          |
+| `shared/`     | Everywhere                  | Cove API client and types, match ranking, settings, messaging contract, URL helpers, layout schema, site adapters. |
+| `layouts/`    | Data                        | One `.lay` file per site with a styled button.                                                                     |
 
-For a local install, unzip `cove-downloader-helper-{version}-chrome.zip` (or use `src/`) and choose **Load unpacked**.
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) explains how the pieces fit together and the rules that keep Chrome happy (user gestures, duplicate protection, storage areas).
 
-On every push to `master`/`main`, GitHub Actions packs the extension and publishes/updates the GitHub Release `v{version}` with the zip. When the manifest `version` is newer than the Chrome Web Store item, the same workflow uploads that zip and submits it for review.
+### Adding a site
 
-Pull requests, pushes to `master`/`main`, and a weekly run of [`.github/workflows/scan-sites.yml`](.github/workflows/scan-sites.yml) scan for site issues. The scan fails when `SUPPORTED_SITE_HOSTS`, the layout files, and [SUPPORTED_SITES.md](SUPPORTED_SITES.md) disagree about hosts, direct media extensions, or stylized button paths.
+- A site that just needs a styled button in its toolbar: add a `.lay` file. See [src/layouts/README.md](src/layouts/README.md). No code.
+- A site that needs the page's player address rather than the page URL (xHamster) or a custom picker (Erome): add a module under `src/shared/sites/` and wire it in `src/background/site-media.ts`. Keep the pure parts testable without Chrome.
+- Then update [SUPPORTED_SITES.md](SUPPORTED_SITES.md). A test fails if the doc, the host list, and the layout files disagree.
 
-The store item ID is `okmkahgbcigkpmaagpddnadpffjpibgm`. Add these repository secrets before the store update will run:
+## Releases
 
-- `CHROME_WEBSTORE_CLIENT_ID`
-- `CHROME_WEBSTORE_CLIENT_SECRET`
-- `CHROME_WEBSTORE_REFRESH_TOKEN`
-- `CHROME_PUBLISHER_ID` (Developer Dashboard → Publisher → Settings)
+Every push to `master` runs the checks, builds, and publishes a GitHub Release `v{version}` with the packed zip. When `version` in `package.json` is newer than the Chrome Web Store item, the workflow also uploads the zip and submits it for review. Store credentials and the one-time OAuth setup are described in [store/STORE_LISTING.md](store/STORE_LISTING.md).
 
-The refresh token has to be minted for this scope only:
+## Privacy
 
-`https://www.googleapis.com/auth/chromewebstore`
-
-That scope belongs to the current API host `chromewebstore.googleapis.com`. The old host `www.googleapis.com/chromewebstore/v1.1` rejects it with “OAuth2 scope name is invalid or it refers to a newer scope”. In the [OAuth playground](https://developers.google.com/oauthplayground):
-
-1. Enable **Chrome Web Store API** on the same Google Cloud project as the OAuth client.
-2. Open the gear icon. Choose **Use your own OAuth credentials**, enter the client ID and secret, and set **Access type** to **Offline**. The client’s redirect URI must be `https://developers.google.com/oauthplayground`.
-3. In **Input your own scopes**, enter `https://www.googleapis.com/auth/chromewebstore` and click **Authorize APIs**. Sign in with the account that owns the store item.
-4. Click **Exchange authorization code for tokens**. Copy the `refresh_token` value into `CHROME_WEBSTORE_REFRESH_TOKEN`.
-5. The playground then puts the scope string in **Request URI** and a GET of that address returns the “newer scope / legacy API” error. That response is not a failed token. Replace the Request URI with `https://chromewebstore.googleapis.com/v2/publishers/PUBLISHER_ID/items/okmkahgbcigkpmaagpddnadpffjpibgm:fetchStatus` and send the GET again.
-
-`CHROME_EXTENSION_ID` is optional. Set it only to publish a different item than `okmkahgbcigkpmaagpddnadpffjpibgm`.
-
-Create the store item once in the Developer Dashboard (listing and privacy tabs filled in). Until the secrets exist, the store job logs a warning and succeeds. A push that does not raise `version` leaves the store item as it is. A manual run can turn off **Publish a newer package to the Chrome Web Store**.
-
-Pull requests, pushes to `master`/`main`, and a weekly run of [`.github/workflows/scan-vulnerabilities.yml`](.github/workflows/scan-vulnerabilities.yml) scan for vulnerabilities. CodeQL analyzes the extension JavaScript. The run fails when the manifest, pages, or layouts add remote code, required access to every site, or a committed secret.
+The extension talks only to the Cove server you configure. See [PRIVACY.md](PRIVACY.md).
 
 ## Credits
 
-- Forked from [Rpsl/metube-browser-extension](https://github.com/Rpsl/metube-browser-extension) (Chrome MeTube Downloader)
-- Targets [Cove](https://github.com/yourcove/cove) and community downloaders from [yourcove/officialextensionregistry](https://github.com/yourcove/officialextensionregistry)
-
-## Contributing
-
-- [Bug report](https://github.com/binarygeek119/cove-downloader-helper/issues/new?template=bug_report.yml)
-- [Feature request](https://github.com/binarygeek119/cove-downloader-helper/issues/new?template=feature_request.yml)
-
-For Cove server, yt-dlp inside Cove, or registry downloaders, prefer upstream: [yourcove/cove](https://github.com/yourcove/cove/issues).
-
-## Chrome Web Store
-
-Submission package and listing copy: see [store/STORE_LISTING.md](store/STORE_LISTING.md).  
-Privacy policy: [PRIVACY.md](PRIVACY.md).
-
-```bash
-./scripts/pack-extension.sh --force
-# upload builds/cove-downloader-helper-*-chrome.zip in the Developer Dashboard
-```
+Started as a fork of [Rpsl/metube-browser-extension](https://github.com/Rpsl/metube-browser-extension), rewritten for Cove. The download glyph is from [Font Awesome Free](https://fontawesome.com/license/free) (CC BY 4.0).

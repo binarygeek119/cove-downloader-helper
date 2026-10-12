@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" data-mode="panel">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Cove panel (dev preview)</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 24px;
+        padding: 24px;
+        background: #0c0d11;
+      }
+      .frame {
+        width: 380px;
+        min-height: 640px;
+        border: 1px solid #2a2d38;
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--color-background);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="frame"><div id="root"></div></div>
+    <script type="module">
+      import "./chrome-shim.ts";
+      await import("../main.tsx");
+    </script>
+  </body>
+</html>
