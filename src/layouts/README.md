@@ -10,12 +10,12 @@ Copy [`pornhub.lay`](pornhub.lay), save it as `sitename.lay` in this folder, and
 
 `kind` chooses what this click downloads. It does not change the saved preferred mode.
 
-| `kind` | Cove receives |
-| --- | --- |
-| `video` | Video. yt-dlp video can still be used when nothing else matches. |
+| `kind`  | Cove receives                                                                       |
+| ------- | ----------------------------------------------------------------------------------- |
+| `video` | Video. yt-dlp video can still be used when nothing else matches.                    |
 | `image` | Image. If Cove returns no image downloader, the button says image is not supported. |
-| `gif` | Image, same rule as `image`. |
-| `story` | Text. If Cove returns no text downloader, the button says text is not supported. |
+| `gif`   | Image, same rule as `image`.                                                        |
+| `story` | Text. If Cove returns no text downloader, the button says text is not supported.    |
 
 ```json
 {
@@ -73,8 +73,7 @@ Every button uses the extension’s download icon. Pick the rest so it sits in t
 From the repository root:
 
 ```bash
-node scripts/check-layouts.mjs
-node scripts/scan-sites.mjs
+npm test
 ```
 
-Those checks also run in CI. A layout file that fails the first check is ignored by the extension. The second check keeps this folder, `SUPPORTED_SITE_HOSTS`, and [SUPPORTED_SITES.md](../../SUPPORTED_SITES.md) on the same hosts and paths.
+`src/shared/layouts/schema.test.ts` validates every file listed in `index.json`, and `src/shared/sites/supported.test.ts` checks that this folder, `SUPPORTED_SITE_HOSTS`, and [SUPPORTED_SITES.md](../../SUPPORTED_SITES.md) agree about hosts and which sites have a styled button. Both run in CI. A layout file that fails validation is ignored by the extension at runtime, with a warning in the service worker console.

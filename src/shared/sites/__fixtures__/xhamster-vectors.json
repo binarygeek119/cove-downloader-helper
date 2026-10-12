@@ -1,0 +1,50 @@
+[
+  {
+    "algo": 1,
+    "seed": 270544961,
+    "text": "https://cdn.example/video/master.m3u8?q=1",
+    "cipher": "0141302010c46fca75d345fd26b74748632d7fdbbc8c47ebba86e6c6fc4b1c9bbceb63ef1362566d5078a0031445"
+  },
+  {
+    "algo": 2,
+    "seed": 270544962,
+    "text": "https://cdn.example/video/master.m3u8?q=2",
+    "cipher": "0242302010fee8f7a692c6bac972d90304b9c34627b293316eee8e756d7dcb138e71bd16f16889911d128662315c"
+  },
+  {
+    "algo": 3,
+    "seed": -8951,
+    "text": "https://cdn.example/video/master.m3u8?q=3",
+    "cipher": "0309ddfffffd0f7877eed04ee188cc83bde04154a6e2094dee0455c012a9bd1f8c08dae1f5f73b5eb9e69ad7d1ff"
+  },
+  {
+    "algo": 4,
+    "seed": 270544964,
+    "text": "https://cdn.example/video/master.m3u8?q=4",
+    "cipher": "04443020102998a5bf1e61f217ae5204f1f9fc53771e1c8d2290982bdc6486f744502c024450812fd1bea5c44e5c"
+  },
+  {
+    "algo": 5,
+    "seed": 270544965,
+    "text": "https://cdn.example/video/master.m3u8?q=5",
+    "cipher": "0545302010190aa1d457135359da613639f13bd9c0a14734dba1bd9bd899e84b7daf4076c216e875a8936daae2e0"
+  },
+  {
+    "algo": 6,
+    "seed": 270544966,
+    "text": "https://cdn.example/video/master.m3u8?q=6",
+    "cipher": "06463020104621f5230733cd2e2eaad5a1660d07ca039164d57533ec6208343290e04e9336206e1725100718e479"
+  },
+  {
+    "algo": 7,
+    "seed": 270544967,
+    "text": "https://cdn.example/video/master.m3u8?q=7",
+    "cipher": "0747302010a6309c0f0f6178390a05f8e66e13b7575a1c1f19bc19a74a6fae78b80752136556998e6f39e57fd07b"
+  },
+  {
+    "algo": 1,
+    "seed": -2147483648,
+    "text": "https://cdn.example/a.m3u8",
+    "cipher": "010000008037469d4470bc0287847edf726e96143d1f6e1cab7278d0cb82d2"
+  }
+]

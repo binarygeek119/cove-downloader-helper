@@ -23,45 +23,40 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Scan for vulnerabilities
-        run: node scripts/scan-vulnerabilities.mjs
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
 
-      - name: Scan supported sites
-        run: node scripts/scan-sites.mjs
+      - name: Install
+        run: npm ci
+
+      - name: Check
+        run: npm run check
 
       - name: Read version
         id: meta
         run: |
-          VERSION=$(jq -r '.version' src/manifest.json)
+          VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
           echo "zip=cove-downloader-helper-${VERSION}-chrome.zip" >> "$GITHUB_OUTPUT"
-          echo "zip_alias=cove-downloader-helper-${VERSION}.zip" >> "$GITHUB_OUTPUT"
 
-      - name: Check layout files
-        run: node scripts/check-layouts.mjs
-
-      - name: Check xHamster player streams
-        run: node scripts/check-xhamster-media.mjs
-
-      - name: Check settings import and export
-        run: node scripts/check-settings-export.mjs
-
-      - name: Pack extension
+      - name: Build and pack
         run: |
-          chmod +x ./scripts/pack-extension.sh ./build.sh
+          npm run build
+          chmod +x ./scripts/pack-extension.sh
           ./scripts/pack-extension.sh --force
           test -f "builds/${{ steps.meta.outputs.zip }}"
-          # Ensure Chrome-loadable layout (manifest at archive root)
+          # Chrome needs the manifest at the archive root.
           unzip -l "builds/${{ steps.meta.outputs.zip }}" | grep -E '^\s+[0-9]+.+\smanifest\.json$'
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: cove-downloader-helper-${{ steps.meta.outputs.version }}-packed
-          path: |
-            builds/${{ steps.meta.outputs.zip }}
-            builds/${{ steps.meta.outputs.zip_alias }}
+          path: builds/${{ steps.meta.outputs.zip }}
           if-no-files-found: error
 
       - name: Publish to GitHub Releases
@@ -78,10 +73,8 @@ jobs:
             2. Enable Developer mode
             3. Choose **Load unpacked** and select the unzipped folder
 
-            Version `${{ steps.meta.outputs.version }}` from `src/manifest.json` @ `${{ github.sha }}`.
-          files: |
-            builds/${{ steps.meta.outputs.zip }}
-            builds/${{ steps.meta.outputs.zip_alias }}
+            Version `${{ steps.meta.outputs.version }}` from `package.json` @ `${{ github.sha }}`.
+          files: builds/${{ steps.meta.outputs.zip }}
           generate_release_notes: true
           make_latest: true
           overwrite_files: true
@@ -141,10 +134,8 @@ jobs:
           CHROME_WEBSTORE_CLIENT_ID: ${{ secrets.CHROME_WEBSTORE_CLIENT_ID }}
           CHROME_WEBSTORE_CLIENT_SECRET: ${{ secrets.CHROME_WEBSTORE_CLIENT_SECRET }}
           CHROME_WEBSTORE_REFRESH_TOKEN: ${{ secrets.CHROME_WEBSTORE_REFRESH_TOKEN }}
-          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
           CHROME_PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
         run: |
           chmod +x ./scripts/publish-chrome-webstore.sh
-          zip="$(find builds -name 'cove-downloader-helper-*-chrome.zip' -print -quit)"
-          test -n "$zip"
-          ./scripts/publish-chrome-webstore.sh "$zip"
+          ./scripts/publish-chrome-webstore.sh "builds/cove-downloader-helper-${{ needs.pack-and-release.outputs.version }}-chrome.zip"

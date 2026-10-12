@@ -1,49 +1,56 @@
 {
-  "name": "Cove Downloader Helper",
-  "description": "Send page and link URLs to your self-hosted Cove app to download with yt-dlp and other Cove downloaders.",
-  "version": "1.0.8",
   "manifest_version": 3,
+  "name": "Cove Downloader Helper",
+  "description": "Send pages, links, and videos to your self-hosted Cove server with one click.",
+  "version": "0.0.0",
   "homepage_url": "https://github.com/binarygeek119/cove-downloader-helper",
   "minimum_chrome_version": "116",
-  "permissions": ["contextMenus", "storage", "tabs", "scripting", "activeTab", "sidePanel", "downloads"],
-  "commands": {
-    "send-page-to-cove": {
-      "suggested_key": {
-        "default": "Alt+W"
-      },
-      "description": "Send the current page URL to Cove"
-    }
-  },
-  "side_panel": {
-    "default_path": "sidepanel.html"
-  },
+  "permissions": ["contextMenus", "storage", "tabs", "scripting", "activeTab", "sidePanel", "downloads", "alarms"],
   "optional_host_permissions": ["http://*/*", "https://*/*"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "panel.html"
   },
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
   },
   "action": {
-    "default_title": "Open the job queue",
+    "default_title": "Cove Downloader Helper",
     "default_icon": {
-      "16": "cove-icon-16.png",
-      "32": "cove-icon-32.png",
-      "48": "cove-icon-48.png",
-      "128": "cove-icon-128.png"
+      "16": "icons/cove-icon-16.png",
+      "32": "icons/cove-icon-32.png",
+      "48": "icons/cove-icon-48.png",
+      "128": "icons/cove-icon-128.png"
     }
   },
   "icons": {
-    "16": "cove-icon-16.png",
-    "32": "cove-icon-32.png",
-    "48": "cove-icon-48.png",
-    "128": "cove-icon-128.png",
-    "256": "cove-icon-256.png"
+    "16": "icons/cove-icon-16.png",
+    "32": "icons/cove-icon-32.png",
+    "48": "icons/cove-icon-48.png",
+    "128": "icons/cove-icon-128.png",
+    "256": "icons/cove-icon-256.png"
+  },
+  "commands": {
+    "send-page": {
+      "suggested_key": {
+        "default": "Alt+Shift+C"
+      },
+      "description": "Send the current page to Cove"
+    },
+    "pool-page": {
+      "description": "Add the current page to the Cove pool"
+    },
+    "send-pool": {
+      "description": "Send the pool to Cove"
+    }
   },
   "web_accessible_resources": [
     {
-      "resources": ["cove-icon-32.png", "cove-icon-48.png", "icon.png"],
+      "resources": ["icons/cove-icon-32.png", "icons/cove-icon-48.png"],
       "matches": ["http://*/*", "https://*/*"]
     }
   ]

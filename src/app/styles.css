@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+/* Cove's default palette (ui/src/index.css in the Cove repo), so the panel reads as part of Cove. */
+@theme {
+  --color-background: #16181d;
+  --color-surface: #1a1c23;
+  --color-card: #1e2028;
+  --color-card-hover: #252830;
+  --color-border: #2a2d38;
+  --color-input: rgba(0, 0, 0, 0.25);
+  --color-foreground: #e8eaf0;
+  --color-secondary: #9ea3b0;
+  --color-muted: #6b7085;
+  --color-accent: #4f8ff7;
+  --color-accent-hover: #6ea4ff;
+  --color-success: #3dd68c;
+  --color-danger: #ff6b6b;
+  --color-warning: #f0c14b;
+  --font-sans: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-background: #f4f6f8;
+    --color-surface: #eef1f4;
+    --color-card: #ffffff;
+    --color-card-hover: #f3f5f8;
+    --color-border: #d5dde6;
+    --color-input: rgba(0, 0, 0, 0.03);
+    --color-foreground: #1a2330;
+    --color-secondary: #4f5d6d;
+    --color-muted: #7a8794;
+    --color-accent: #2f6fe0;
+    --color-accent-hover: #1f5bc4;
+    --color-success: #0d8a4d;
+    --color-danger: #c62828;
+    --color-warning: #a16207;
+  }
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+html[data-mode="panel"] body {
+  min-width: 300px;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-foreground) 15%, transparent);
+  border-radius: 4px;
+}
+* {
+  scrollbar-color: color-mix(in srgb, var(--color-foreground) 15%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+a,
+button {
+  transition:
+    color 0.15s,
+    background-color 0.15s,
+    border-color 0.15s,
+    opacity 0.15s;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+@keyframes cove-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.progress-indeterminate {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-accent) 60%, transparent),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: cove-shimmer 1.4s linear infinite;
+}
